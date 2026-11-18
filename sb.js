@@ -6,7 +6,7 @@
   var KEY="sb_publishable_Hcm_PozoiTG1ZLhwC4F49A_MXdBKgfZ";
   if(!window.supabase||!window.supabase.createClient||window.claude)return;
   var sb=window.supabase.createClient(URL,KEY);
-  var cache={docs:{},private_docs:{}},loaded={docs:false,private_docs:false},subs=[],session=null,editor=null;
+  var cache={docs:{},private_docs:{}},loaded={docs:false,private_docs:false},subs=[],wrote={},session=null,editor=null;
 
   function clone(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));}
   function tbl(p){return p.indexOf("private/")===0?"private_docs":"docs";}
@@ -27,9 +27,12 @@
   }
   function load(t){
     if(t==="private_docs"&&!session){loaded[t]=true;cache[t]={};fireAll(t);return Promise.resolve();}
+    var t0=Date.now();
     return sb.from(t).select("path,data").then(function(r){
       if(r.error){subs.forEach(function(s){if(s.t===t&&s.err)s.err(mapErr(r.error));});return;}
       var c={};(r.data||[]).forEach(function(row){c[row.path]=row.data;});
+      /* a save made while this read was in flight wins over the older copy the read brought back */
+      Object.keys(wrote).forEach(function(p){if(tbl(p)===t&&wrote[p]>=t0-2000){if(cache[t][p]===undefined)delete c[p];else c[p]=cache[t][p];}});
       cache[t]=c;loaded[t]=true;fireAll(t);
     });
   }
@@ -42,8 +45,8 @@
   function ref(path){
     var t=tbl(path);
     return {
-      set:function(v){var d=clone(v);return sb.from(t).upsert({path:path,data:d,updated_at:new Date().toISOString()}).then(function(r){if(r.error)throw mapErr(r.error);cache[t][path]=d;fire(path,t);});},
-      delete:function(){return sb.from(t).delete().eq("path",path).then(function(r){if(r.error)throw mapErr(r.error);delete cache[t][path];fire(path,t);});},
+      set:function(v){var d=clone(v);wrote[path]=Date.now();return sb.from(t).upsert({path:path,data:d,updated_at:new Date().toISOString()}).then(function(r){if(r.error)throw mapErr(r.error);cache[t][path]=d;wrote[path]=Date.now();fire(path,t);});},
+      delete:function(){return sb.from(t).delete().eq("path",path).then(function(r){if(r.error)throw mapErr(r.error);delete cache[t][path];wrote[path]=Date.now();fire(path,t);});},
       onSnapshot:function(cb,err){var s={t:t,key:path,doc:true,cb:cb,err:err};subs.push(s);setTimeout(function(){emit(s);},0);return function(){subs.splice(subs.indexOf(s),1);};}
     };
   }
