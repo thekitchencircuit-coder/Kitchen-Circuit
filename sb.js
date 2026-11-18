@@ -1,0 +1,102 @@
+/* Kitchen Circuit: live data through Supabase.
+   Gives the scoreboard the same small db interface it used inside Claude
+   (doc/collection .set, .delete, .onSnapshot), plus the scorekeeper sign-in. */
+(function(){
+  var URL="https://yhtlwmkktayzttwrcaqv.supabase.co";
+  var KEY="sb_publishable_Hcm_PozoiTG1ZLhwC4F49A_MXdBKgfZ";
+  if(!window.supabase||!window.supabase.createClient||window.claude)return;
+  var sb=window.supabase.createClient(URL,KEY);
+  var cache={docs:{},private_docs:{}},loaded={docs:false,private_docs:false},subs=[],session=null,editor=null;
+
+  function clone(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));}
+  function tbl(p){return p.indexOf("private/")===0?"private_docs":"docs";}
+  function docSnap(path){var v=cache[tbl(path)][path];return {id:path.split("/").pop(),exists:v!==undefined,data:function(){return clone(v);}};}
+  function colSnap(col){var pre=col+"/",out=[];Object.keys(cache.docs).sort().forEach(function(p){if(p.indexOf(pre)===0&&p.slice(pre.length).indexOf("/")<0)out.push(docSnap(p));});return {docs:out};}
+  function emit(s){
+    if(!loaded[s.t])return;
+    var snap=s.doc?docSnap(s.key):colSnap(s.key),sig=JSON.stringify(s.doc?[snap.exists,snap.data()]:snap.docs.map(function(d){return [d.id,d.data()];}));
+    if(sig===s.last)return;s.last=sig;
+    try{s.cb(snap);}catch(e){console.error(e);}
+  }
+  function fire(path,t){subs.forEach(function(s){if(s.t===t&&(s.doc?s.key===path:path.indexOf(s.key+"/")===0))emit(s);});}
+  function fireAll(t){subs.forEach(function(s){if(s.t===t)emit(s);});}
+  function mapErr(e){
+    var m=(e&&e.message)||String(e);
+    if(e&&(e.code==="42501"||/row-level security|permission/i.test(m)))return {code:"invalid_argument",message:m};
+    return {code:(e&&e.code)||"error",message:m};
+  }
+  function load(t){
+    if(t==="private_docs"&&!session){loaded[t]=true;cache[t]={};fireAll(t);return Promise.resolve();}
+    return sb.from(t).select("path,data").then(function(r){
+      if(r.error){subs.forEach(function(s){if(s.t===t&&s.err)s.err(mapErr(r.error));});return;}
+      var c={};(r.data||[]).forEach(function(row){c[row.path]=row.data;});
+      cache[t]=c;loaded[t]=true;fireAll(t);
+    });
+  }
+  function loadAll(){return Promise.all([load("docs"),load("private_docs")]);}
+  function onChange(t){return function(p){
+    if(p.eventType==="DELETE"){var o=p.old&&p.old.path;if(o){delete cache[t][o];fire(o,t);}}
+    else if(p.new&&p.new.path){cache[t][p.new.path]=p.new.data;fire(p.new.path,t);}
+  };}
+
+  function ref(path){
+    var t=tbl(path);
+    return {
+      set:function(v){var d=clone(v);return sb.from(t).upsert({path:path,data:d,updated_at:new Date().toISOString()}).then(function(r){if(r.error)throw mapErr(r.error);cache[t][path]=d;fire(path,t);});},
+      delete:function(){return sb.from(t).delete().eq("path",path).then(function(r){if(r.error)throw mapErr(r.error);delete cache[t][path];fire(path,t);});},
+      onSnapshot:function(cb,err){var s={t:t,key:path,doc:true,cb:cb,err:err};subs.push(s);setTimeout(function(){emit(s);},0);return function(){subs.splice(subs.indexOf(s),1);};}
+    };
+  }
+  var db={
+    doc:ref,
+    collection:function(c){return {
+      doc:function(id){return ref(c+"/"+id);},
+      onSnapshot:function(cb,err){var s={t:"docs",key:c,doc:false,cb:cb,err:err};subs.push(s);setTimeout(function(){emit(s);},0);return function(){subs.splice(subs.indexOf(s),1);};}
+    };}
+  };
+
+  var ready=sb.auth.getSession().then(function(r){session=(r&&r.data&&r.data.session)||null;}).catch(function(){session=null;}).then(function(){
+    if(!session)return false;
+    return sb.rpc("is_editor").then(function(r){return r&&r.data===true;}).catch(function(){return false;});
+  }).then(function(ed){editor=ed;footer();
+    sb.channel("kc-live")
+      .on("postgres_changes",{event:"*",schema:"public",table:"docs"},onChange("docs"))
+      .on("postgres_changes",{event:"*",schema:"public",table:"private_docs"},onChange("private_docs"))
+      .subscribe(function(st){if(st==="SUBSCRIBED")loadAll();});
+    setInterval(loadAll,15000);
+    document.addEventListener("visibilitychange",function(){if(!document.hidden)loadAll();});
+    return loadAll();
+  });
+
+  window.claude={use:function(name){
+    if(name==="db")return ready.then(function(){return db;});
+    if(name==="user")return ready.then(function(){return {canEdit:function(){return editor===true;}};});
+    return Promise.resolve(null);
+  }};
+
+  /* ---- scorekeeper sign-in, at the bottom of the page ---- */
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function footer(msg){
+    var el=document.getElementById("skl");if(!el)return;
+    if(session){
+      el.innerHTML='Signed in as '+esc(session.user&&session.user.email||'')+(editor?' (scorekeeper)':' (this email is not on the scorekeeper list)')+' &middot; <a data-sk="out">Sign out</a>';
+    }else{
+      el.innerHTML='<a data-sk="show">Scorekeeper sign in</a>'+(msg?'<div style="color:#b3261e;margin-top:6px">'+esc(msg)+'</div>':'');
+    }
+  }
+  document.addEventListener("click",function(e){
+    var a=e.target&&e.target.dataset&&e.target.dataset.sk;if(!a)return;
+    var el=document.getElementById("skl");
+    if(a==="show"){el.innerHTML='<form id="skf"><input type="email" id="ske" placeholder="Email" autocomplete="username" required><input type="password" id="skp" placeholder="Password" autocomplete="current-password" required><button type="submit">Sign in</button><a data-sk="cancel">Cancel</a></form>';document.getElementById("ske").focus();}
+    else if(a==="cancel")footer();
+    else if(a==="out")sb.auth.signOut().then(function(){location.reload();});
+  });
+  document.addEventListener("submit",function(e){
+    if(!e.target||e.target.id!=="skf")return;e.preventDefault();
+    var b=e.target.querySelector("button");b.disabled=true;b.textContent="Signing in...";
+    sb.auth.signInWithPassword({email:document.getElementById("ske").value.trim(),password:document.getElementById("skp").value}).then(function(r){
+      if(r.error){footer("Sign-in failed: "+r.error.message);return;}
+      location.reload();
+    });
+  });
+})();
