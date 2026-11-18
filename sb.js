@@ -66,7 +66,7 @@
       .on("postgres_changes",{event:"*",schema:"public",table:"docs"},onChange("docs"))
       .on("postgres_changes",{event:"*",schema:"public",table:"private_docs"},onChange("private_docs"))
       .subscribe(function(st){if(st==="SUBSCRIBED")loadAll();});
-    setInterval(loadAll,15000);
+    setInterval(function(){if(!document.hidden)loadAll();},60000);
     document.addEventListener("visibilitychange",function(){if(!document.hidden)loadAll();});
     return loadAll();
   });
