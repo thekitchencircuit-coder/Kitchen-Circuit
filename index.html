@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kitchen Circuit Moneyball · Dec 19</title>
+<style>
+:root{--bg:#f5f8f4;--card:#fff;--ink:#14211b;--muted:#586a60;--line:#cdd8d0;--accent:#1f6b45;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1612;--card:#16221b;--ink:#e5eee8;--muted:#9bb0a4;--line:#2b3b32;--accent:#58c28a;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:20px 14px 40px}
+h1{font-size:1.4rem;margin:0 0 4px}
+.sub{color:var(--muted);font-size:.88rem;margin:2px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+h2{font-size:1.05rem;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2 span{font-size:.8rem;font-weight:500;color:var(--muted)}
+ol{margin:0;padding-left:1.4em}li{padding:4px 0;border-bottom:1px solid var(--line)}li:last-child{border:0}
+.tbc{color:var(--muted);font-size:.85rem}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Kitchen Circuit Moneyball</h1>
+<p class="sub">Saturday, Dec 19 · Nova Pickleball and Badminton Club · <span id="tot"></span></p>
+<input id="q" placeholder="Search a player name" oninput="draw()">
+<div id="out"></div>
+<p class="sub">Live scores, standings and playoffs will appear on this page on tournament day.</p>
+</div>
+<script>
+var DIVS=[
+ {name:"MD Open",teams:[["Brandon","Tim"],["Vikas","Marco"],["Elliot","Liam"],["Tommy","Josh"]]},
+ {name:"MD DUPR 9",teams:[["Brad","Tony Fong"],["Tyler"],["Yurii","Skander"],["Lucas","Nelson Leung"],["Adi","Olek"],["Miguel"],["Dhruv"]]},
+ {name:"WD DUPR 9",teams:[["Rachel"],["Francesca"],["Jade"],["Aaleigha"],["Bahar","Stacy"]]}
+];
+var SIZE=10;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function draw(){
+ var q=document.getElementById("q").value.trim().toLowerCase(),h="",n=0;
+ DIVS.forEach(function(d){
+  n+=d.teams.length;
+  var rows=d.teams.filter(function(t){return !q||t.join(" ").toLowerCase().indexOf(q)>=0;});
+  if(q&&!rows.length)return;
+  h+='<div class="card"><h2>'+esc(d.name)+'<span>'+d.teams.length+' of '+SIZE+' teams</span></h2><ol>';
+  rows.forEach(function(t){h+='<li>'+t.map(esc).join(" &amp; ")+(t.length<2?' <span class="tbc">&amp; partner to be confirmed</span>':'')+'</li>';});
+  h+='</ol>'+(!q&&SIZE-d.teams.length>0?'<p class="sub" style="margin:8px 0 0">'+(SIZE-d.teams.length)+' spots still open</p>':'')+'</div>';
+ });
+ document.getElementById("out").innerHTML=h||'<p class="sub">No player found.</p>';
+ document.getElementById("tot").textContent=n+" of "+(SIZE*DIVS.length)+" teams registered";
+}
+draw();
+</script>
+</body>
+</html>
