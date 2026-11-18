@@ -21,9 +21,9 @@
   function fire(path,t){subs.forEach(function(s){if(s.t===t&&(s.doc?s.key===path:path.indexOf(s.key+"/")===0))emit(s);});}
   function fireAll(t){subs.forEach(function(s){if(s.t===t)emit(s);});}
   function mapErr(e){
+    /* keep scorekeeper mode on and show the database's own reason on the status line */
     var m=(e&&e.message)||String(e);
-    if(e&&(e.code==="42501"||/row-level security|permission/i.test(m)))return {code:"invalid_argument",message:m};
-    return {code:(e&&e.code)||"error",message:m};
+    return {message:(e&&e.code?e.code+" ":"")+m};
   }
   function load(t){
     if(t==="private_docs"&&!session){loaded[t]=true;cache[t]={};fireAll(t);return Promise.resolve();}
