@@ -571,7 +571,9 @@ function saveCfg(){
 }
 function clearAll(){
   var ids=Object.keys(S.s);S.s={};S.st={};S.en={};S.mv={};S.c={};S.cp={};
-  if(db){ids.forEach(function(id){queueSave(id,function(){return db.collection("scores").doc(id).delete();},function(){SW[id]={v:["",""],t:Date.now()};});});wst();wen();wmv();wc();}
+  var rids=Object.keys(RF());S.rf={};REFID=null;REFSETUP=null;REFSAVED=null;
+  if(db){ids.forEach(function(id){queueSave(id,function(){return db.collection("scores").doc(id).delete();},function(){SW[id]={v:["",""],t:Date.now()};});});
+    rids.forEach(function(id){queueSave("rf"+id,function(){return db.collection("ref").doc(id).delete();},function(){WT.rf=Date.now();});});wst();wen();wmv();wc();}
   else save();
   render();
 }
@@ -832,6 +834,7 @@ function vRef(){
   if(!REFID)return refPick();
   var g=refGame(REFID);if(!g){REFID=null;return refPick();}
   var R=RF()[REFID];
+  if(R&&R.fin&&!sc(REFID)&&REFSAVED!==REFID)R=null;
   if(!R||!R.first)return refSetupView(g);
   return refScoreView(g,R);
 }
@@ -977,7 +980,7 @@ document.addEventListener("input",function(e){
 document.addEventListener("click",function(e){
   var t=e.target;
   if(t.dataset&&t.dataset.t){var ae=document.activeElement;if(ae&&ae.blur)ae.blur();tab=t.dataset.t;armed=false;armedClr=false;render();window.scrollTo(0,0);}
-  else if(t.dataset&&t.dataset.clr){if(!canEdit)return;var cid=t.dataset.clr;S.s[cid]=["",""];ds=1;wr(cid,["",""]);markEnd(cid);render();}
+  else if(t.dataset&&t.dataset.clr){if(!canEdit)return;var cid=t.dataset.clr;S.s[cid]=["",""];ds=1;wr(cid,["",""]);markEnd(cid);if(RF()[cid]){S.rf=Object.assign({},RF());delete S.rf[cid];if(REFSAVED===cid)REFSAVED=null;if(db)queueSave("rf"+cid,function(){return db.collection("ref").doc(cid).delete();},function(){WT.rf=Date.now();});}render();}
   else if(t.dataset&&t.dataset.cp!==undefined){copyText(t);}
   else if(t.dataset&&t.dataset.start&&canEdit){S.st=Object.assign({},S.st);S.st[t.dataset.start]=Date.now();wst();render();}
   else if(t.dataset&&t.dataset.unstart&&canEdit){S.st=Object.assign({},S.st);delete S.st[t.dataset.unstart];wst();render();}
