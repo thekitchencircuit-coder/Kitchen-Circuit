@@ -6,7 +6,7 @@
   var KEY="sb_publishable_Hcm_PozoiTG1ZLhwC4F49A_MXdBKgfZ";
   if(!window.supabase||!window.supabase.createClient||window.claude)return;
   var sb=window.supabase.createClient(URL,KEY);
-  var cache={docs:{},private_docs:{}},loaded={docs:false,private_docs:false},subs=[],wrote={},session=null,editor=null;
+  var cache={docs:{},private_docs:{}},loaded={docs:false,private_docs:false},subs=[],wrote={},session=null,editor=null,referee=false;
 
   function clone(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));}
   function tbl(p){return p.indexOf("private/")===0?"private_docs":"docs";}
@@ -59,9 +59,10 @@
   };
 
   var ready=sb.auth.getSession().then(function(r){session=(r&&r.data&&r.data.session)||null;}).catch(function(){session=null;}).then(function(){
-    if(!session)return false;
-    return sb.rpc("is_editor").then(function(r){return r&&r.data===true;}).catch(function(){return false;});
-  }).then(function(ed){editor=ed;footer();
+    if(!session)return [false,false];
+    function chk(fn){return sb.rpc(fn).then(function(r){return !!(r&&r.data===true);}).catch(function(){return false;});}
+    return Promise.all([chk("is_editor"),chk("is_ref")]);
+  }).then(function(rl){editor=rl[0];referee=rl[1];window.KC_ROLE={editor:editor,ref:referee};footer();
     sb.channel("kc-live")
       .on("postgres_changes",{event:"*",schema:"public",table:"docs"},onChange("docs"))
       .on("postgres_changes",{event:"*",schema:"public",table:"private_docs"},onChange("private_docs"))
@@ -82,9 +83,9 @@
   function footer(msg){
     var el=document.getElementById("skl");if(!el)return;
     if(session){
-      el.innerHTML='Signed in as '+esc(session.user&&session.user.email||'')+(editor?' (scorekeeper)':' (this email is not on the scorekeeper list)')+' &middot; <a data-sk="out">Sign out</a>';
+      el.innerHTML='Signed in as '+esc(session.user&&session.user.email||'')+(editor?' (scorekeeper)':referee?' (referee)':' (this email is not on the scorekeeper or referee list)')+' &middot; <a data-sk="out">Sign out</a>';
     }else{
-      el.innerHTML='<a data-sk="show">Scorekeeper sign in</a>'+(msg?'<div style="color:#b3261e;margin-top:6px">'+esc(msg)+'</div>':'');
+      el.innerHTML='<a data-sk="show">Scorekeeper / referee sign in</a>'+(msg?'<div style="color:#b3261e;margin-top:6px">'+esc(msg)+'</div>':'');
     }
   }
   document.addEventListener("click",function(e){
