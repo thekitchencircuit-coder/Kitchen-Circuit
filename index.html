@@ -164,6 +164,10 @@ nav button{font-size:.72rem!important;padding:9px 2px!important}
 .rfnet{text-align:center;font-size:.7rem;letter-spacing:.3em;background:var(--ink);color:var(--bg);padding:2px}
 .rfrow{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.rfrow .cp{flex:1;min-width:90px;padding:10px 6px}
 .rfover{text-align:center;padding:16px;border:2px solid var(--accent);border-radius:12px;margin-top:8px}.rfl2{font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent)}
+.wlh{font-size:.95rem;margin:10px 0 4px}.wlt td{color:var(--muted)}
+.wlb{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px;background:var(--card)}.wlb h3{margin:2px 0 6px}
+.wlr{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}.wln{color:var(--muted);min-width:20px}.wlx{flex:1}
+.wla{display:flex;gap:6px;margin-top:8px}.wla input{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -594,7 +598,7 @@ function isOpen(){return !!S.lv.open||Object.keys(S.st).length>0||anyScore();}
 function wlv(){if(!db){save();return;}var o=!!S.lv.open;queueSave("lv",function(){return db.doc("meta/live").set({open:o});},function(){WT.lv=Date.now();});}
 function filterRoster(){
   var q=RSEARCH.trim().toLowerCase();
-  Array.prototype.forEach.call(document.querySelectorAll('tr[data-r]'),function(el){var t=el.getAttribute('data-r'),key=(t+" "+players(t).join(" ")+" "+(S.n[t]||"")).toLowerCase();el.style.display=!q||key.indexOf(q)>=0?'':'none';});
+  Array.prototype.forEach.call(document.querySelectorAll('tr[data-r]'),function(el){var t=el.getAttribute('data-r'),key=(el.getAttribute('data-k')||(t+" "+players(t).join(" ")+" "+(S.n[t]||""))).toLowerCase();el.style.display=!q||key.indexOf(q)>=0?'':'none';});
   Array.prototype.forEach.call(document.querySelectorAll('.rp'),function(w){var any=Array.prototype.some.call(w.querySelectorAll('tr[data-r]'),function(el){return el.style.display!=='none';});w.style.display=any?'':'none';});
   Array.prototype.forEach.call(document.querySelectorAll('.rd'),function(w){var any=Array.prototype.some.call(w.querySelectorAll('.rp'),function(el){return el.style.display!=='none';});w.style.display=any?'':'none';});
   var nr=document.getElementById('rnores');if(nr)nr.style.display=q&&!document.querySelector('tr[data-r]:not([style*="none"])')?'':'none';
@@ -613,7 +617,12 @@ function vRoster(){
     named.forEach(function(t,i){var pl=players(t).filter(Boolean);
       h+='<tr data-r="'+t+'"><td>'+(i+1)+'</td><td class="l">'+pl.map(esc).join(' &amp; ')+(pl.length<2?' <span class="sub" style="margin:0">&amp; partner to be confirmed</span>':'')+'</td></tr>';});
     if(!named.length)h+='<tr><td></td><td class="l"><span class="sub" style="margin:0">No teams yet</span></td></tr>';
-    h+='</table>'+(open>0?'<p class="sub">'+open+' spot'+(open>1?'s':'')+' still open.</p>':'')+'</div></div>';
+    h+='</table>'+(open>0?'<p class="sub">'+open+' spot'+(open>1?'s':'')+' still open.</p>':'')+'</div>';
+    var wl=WL(CFG.divs.indexOf(d));
+    if(wl.length){h+='<div class="rp"><h3 class="wlh">Waitlist <span class="pc">'+wl.length+'</span></h3><table class="rt wlt">';
+      wl.forEach(function(x,i){h+='<tr data-r="wl" data-k="'+esc(x)+'"><td>'+(i+1)+'</td><td class="l">'+esc(x)+'</td></tr>';});
+      h+='</table><p class="sub">Teams on the waitlist move in, in order, if a spot opens.</p></div>';}
+    h+='</div>';
   });
   return h+rulesBlock();
 }
@@ -643,9 +652,44 @@ function vTeams(){
     });
     h+='</div></div>';
   });
-  h+=vPlayerView()+vStats()+vFormat();
+  h+=vWait()+vPlayerView()+vStats()+vFormat();
   return h;
 }
+/* ---- waitlists, one per division ---- */
+function WL(di){var w=S.wl||{};return (w[di]||[]).slice();}
+function divCodes(di){var d=CFG.divs[di],c=[];if(!d)return c;for(var k=1;k<=d.size;k++)d.pl.forEach(function(p){c.push(p+k);});return c;}
+function openSpot(di){return divCodes(di).filter(function(t){return !players(t).some(Boolean);})[0]||null;}
+function wwl(){if(!db){save();return;}var v=JSON.parse(JSON.stringify(S.wl||{}));queueSave("wl",function(){return db.doc("meta/waitlist").set({w:v});},function(){WT.wl=Date.now();});}
+function setWL(di,arr){S.wl=Object.assign({},S.wl||{});if(arr.length)S.wl[di]=arr;else delete S.wl[di];wwl();}
+function vWait(){
+  var h='<h2 class="dvh">Waitlists</h2><p class="sub">Add teams waiting for a spot. They show on the Roster under their division. <b>Move in</b> puts a team into the first open spot in that division.</p>';
+  CFG.divs.forEach(function(d,di){
+    var wl=WL(di),sp=openSpot(di);
+    h+='<div class="wlb"><h3>'+esc(d.name)+' <span class="pc">'+(wl.length?wl.length+' waiting':'none waiting')+(sp?' &middot; open spot '+sp:' &middot; division full')+'</span></h3>';
+    wl.forEach(function(x,i){
+      h+='<div class="wlr"><span class="wln">'+(i+1)+'.</span><span class="wlx">'+esc(x)+'</span>'+
+        (i>0?'<button class="cp" data-wlup="'+di+'|'+i+'" aria-label="Move up">&uarr;</button>':'')+
+        '<button class="cp" data-wlin="'+di+'|'+i+'"'+(sp?'':' disabled title="No open spot in this division"')+'>Move in'+(sp?' to '+sp:'')+'</button>'+
+        '<button class="cl" data-wlrm="'+di+'|'+i+'" aria-label="Remove from waitlist">&times;</button></div>';
+    });
+    h+='<div class="wla"><input type="text" data-wlnew="'+di+'" placeholder="Player 1 &amp; Player 2"><button class="cp" data-wladd="'+di+'">Add</button></div></div>';
+  });
+  return h;
+}
+function wlAdd(di){var el=document.querySelector('input[data-wlnew="'+di+'"]');if(!el)return;var v=el.value.trim();if(!v)return;var a=WL(di);a.push(v);el.value="";setWL(di,a);render();}
+document.addEventListener("keydown",function(e){var t=e.target;if(e.key==="Enter"&&t&&t.dataset&&t.dataset.wlnew!==undefined){e.preventDefault();wlAdd(t.dataset.wlnew);}});
+document.addEventListener("click",function(e){
+  var t=e.target.closest?e.target.closest("[data-wladd],[data-wlrm],[data-wlup],[data-wlin]"):null;if(!t||!canEdit)return;var d=t.dataset;
+  if(d.wladd!==undefined){wlAdd(d.wladd);return;}
+  var p=(d.wlrm||d.wlup||d.wlin).split("|"),di=+p[0],i=+p[1],a=WL(di);if(!a[i])return;
+  if(d.wlrm){a.splice(i,1);setWL(di,a);}
+  else if(d.wlup){var x=a[i];a[i]=a[i-1];a[i-1]=x;setWL(di,a);}
+  else if(d.wlin){var sp=openSpot(di);if(!sp)return;var nm3=a[i].split(/\s*(?:&|\/|\+|,|\band\b)\s*/i).filter(Boolean);
+    S.pl=Object.assign({},S.pl);S.pl[sp]=[nm3[0]||"",nm3.slice(1).join(" ")||""];S.n=Object.assign({},S.n);S.n[sp]=S.pl[sp].filter(Boolean).join(" & ");dn=1;wn();
+    a.splice(i,1);setWL(di,a);}
+  render();
+});
+
 
 
 function poList(){
@@ -926,7 +970,7 @@ function tryApply(){
     S.s=x;delete SNAP.s;ch=true;}
   if(SNAP.f){if(!(WT.f>SNAP.f.t)){setCfg(SNAP.f.v);DRAFT=null;}delete SNAP.f;ch=true;}
   if(SNAP.rf&&PEND===0){if(!(WT.rf>SNAP.rf.t))S.rf=SNAP.rf.v;delete SNAP.rf;ch=true;}
-  ["n","c","p","mv","st","en","cp","pl","lv"].forEach(function(k){if(SNAP[k]){if(!(WT[k]>SNAP[k].t)){S[k]=SNAP[k].v;if(k==="n")S.nb=SNAP[k].nb;}delete SNAP[k];ch=true;}});
+  ["n","c","p","mv","st","en","cp","pl","lv","wl"].forEach(function(k){if(SNAP[k]){if(!(WT[k]>SNAP[k].t)){S[k]=SNAP[k].v;if(k==="n")S.nb=SNAP[k].nb;}delete SNAP[k];ch=true;}});
   if(ch)render();
 }
 function queueSave(key,fn,done){
@@ -998,16 +1042,17 @@ document.addEventListener("click",function(e){
 function refresh(){var a=document.activeElement;if(canEdit&&a&&a.tagName==="INPUT")return;render();}
 function initDb(){
   if(!(window.claude&&claude.use))return;
-  S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{}};setCfg(null);ST="Connecting to live scores...";
+  S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{}};setCfg(null);ST="Connecting to live scores...";
   claude.use("db").then(function(d){
     if(!d){ST="Sign in to Claude to see live scores.";render();return;}
-    db=d;S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{}};canEdit=false;ST="Connecting to live scores...";render();
+    db=d;S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{}};canEdit=false;ST="Connecting to live scores...";render();
     var tm=setTimeout(function(){ST="Cannot reach live scores yet. What you see may be out of date.";render();},10000);
     function ok(){clearTimeout(tm);ST=canEdit?"Scorekeeper mode. Scores save live.":isRefUser()?"Referee mode. Pick your match on the Referee tab.":"Live view. Updates automatically.";}
     db.collection("scores").onSnapshot(function(snap){ld.s=1;var x={};snap.docs.forEach(function(y){var v=y.data();if(v)x[y.id]=[v.a,v.b];});SNAP.s={v:x,t:Date.now()};ok();tryApply();},function(){ST="Live scores are unavailable right now.";render();});
     db.doc("meta/names").onSnapshot(function(y){ld.n=1;var v=y.exists?y.data():null;var tn=Date.now();SNAP.n={v:Object.assign({},(v&&v.n)||{}),nb:!!(v&&v.blank),t:tn};SNAP.pl={v:JSON.parse(JSON.stringify((v&&v.pl)||{})),t:tn};ok();tryApply();},function(){});
     db.doc("meta/checkin").onSnapshot(function(y){ld.c=1;var v=y.exists?y.data():null;var tc=Date.now();SNAP.c={v:Object.assign({},(v&&v.c)||{}),t:tc};SNAP.cp={v:JSON.parse(JSON.stringify((v&&v.p)||{})),t:tc};tryApply();},function(){});
     db.doc("meta/format").onSnapshot(function(y){var v=y.exists?y.data():null,c=null;try{c=v&&v.j?JSON.parse(v.j):null;}catch(e){}SNAP.f={v:c,t:Date.now()};tryApply();},function(){});
+    db.doc("meta/waitlist").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.wl={v:(v&&v.w)||{},t:Date.now()};tryApply();},function(){});
     db.doc("meta/live").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.lv={v:{open:!!(v&&v.open)},t:Date.now()};tryApply();},function(){});
     db.doc("meta/ended").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.en={v:Object.assign({},(v&&v.e)||{}),t:Date.now()};tryApply();},function(){});
     db.doc("meta/started").onSnapshot(function(y){ld.t=1;var v=y.exists?y.data():null;SNAP.st={v:Object.assign({},(v&&v.g)||{}),t:Date.now()};tryApply();},function(){});
