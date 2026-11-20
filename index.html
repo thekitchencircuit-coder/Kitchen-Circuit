@@ -512,10 +512,11 @@ function vPlay(){
 var DRAFT=null,armedClr=false;
 function m2t(m){var h=Math.floor(m/60),x=m%60;return (h<10?"0":"")+h+":"+(x<10?"0":"")+x;}
 function t2m(v){var p=String(v||"").split(":");return (+p[0])*60+(+p[1]||0);}
-function cfgClean(c){var o=JSON.parse(JSON.stringify(c));o.divs.forEach(function(d){delete d.pl;delete d.n;});return o;}
+function cfgClean(c){var o=JSON.parse(JSON.stringify(c));o.divs.forEach(function(d){delete d.pl;delete d.n;delete d._o;});return o;}
+function mkDraft(){var o=cfgClean(CFG);o.divs.forEach(function(d,i){d._o=i;});return o;}
 function anyScore(){return Object.keys(S.s).some(function(id){return sc(id);});}
 function vFormat(){
-  if(!DRAFT)DRAFT=cfgClean(CFG);
+  if(!DRAFT)DRAFT=mkDraft();
   var D=DRAFT,lock=anyScore(),dis=lock?' disabled':'';
   var h='<h2 class="dvh">Event format</h2>';
   h+='<div class="fbox"><p class="sub" style="margin-top:0">Set up divisions, pools, courts and scoring. The schedule, standings, brackets and the playoff format box all update from these settings.</p>';
@@ -558,7 +559,7 @@ function fmtErrors(D){
 }
 function readCourts(v){return String(v).split(/[^0-9]+/).filter(Boolean).map(Number);}
 function cfgInput(t){
-  if(!DRAFT)DRAFT=cfgClean(CFG);var d=t.dataset;
+  if(!DRAFT)DRAFT=mkDraft();var d=t.dataset;
   if(d.cf){var k=d.cf;
     if(k==="start"||k==="close"||k==="ovclose")DRAFT[k]=t2m(t.value);
     else if(k==="courts"||k==="ovc")DRAFT[k]=readCourts(t.value);
@@ -568,10 +569,28 @@ function cfgInput(t){
   else if(d.cr){DRAFT.rules[d.cr]=t.value;}
 }
 function saveCfg(){
+  var link=DRAFT.divs.map(function(d){return d._o;}),oldPl=CFG.divs.map(function(d){return d.pl.slice();}),oldSz=CFG.divs.map(function(d){return d.size;});
   var v=cfgClean(DRAFT);setCfg(v);DRAFT=null;
+  remapTeams(link,oldPl,oldSz);
   if(!db){S.f=v;save();render();return;}
   var j=JSON.stringify(v);queueSave("fmt",function(){return db.doc("meta/format").set({j:j});},function(){WT.f=Date.now();});
   render();
+}
+/* when divisions are removed, added or reordered, pool letters shift (A, B, C...).
+   Move each team's names, check-in and phones to its new code so nobody lands in the wrong division. */
+function remapTeams(link,oldPl,oldSz){
+  var map={},same=true;
+  CFG.divs.forEach(function(d,ni){var oi=link[ni];if(oi==null||!oldPl[oi])return;
+    for(var p=0;p<Math.min(oldPl[oi].length,d.pl.length);p++)for(var k=1;k<=Math.min(oldSz[oi],d.size);k++){map[oldPl[oi][p]+k]=d.pl[p]+k;}});
+  var olds=[];oldPl.forEach(function(pl,oi){pl.forEach(function(P){for(var k=1;k<=oldSz[oi];k++)olds.push(P+k);});});
+  olds.forEach(function(c){if(map[c]!==c)same=false;});
+  var wl=S.wl||{},nwl={},wsame=true;link.forEach(function(oi,ni){if(oi!=null&&wl[oi]){nwl[ni]=wl[oi];if(oi!==ni)wsame=false;}});
+  if(Object.keys(nwl).length!==Object.keys(wl).length)wsame=false;
+  if(!wsame){S.wl=nwl;wwl();}
+  if(same)return;
+  function mv(o){var r={};Object.keys(o||{}).forEach(function(c){if(map[c])r[map[c]]=o[c];});return r;}
+  S.n=mv(S.n);S.pl=mv(S.pl);S.c=mv(S.c);S.cp=mv(S.cp);S.p=mv(S.p);dn=1;
+  wn();wc();wp();
 }
 function clearAll(){
   var ids=Object.keys(S.s);S.s={};S.st={};S.en={};S.mv={};S.c={};S.cp={};
@@ -1033,9 +1052,9 @@ document.addEventListener("click",function(e){
   else if(t.dataset&&t.dataset.txm){TXM=t.dataset.txm;render();}
   else if(t.dataset&&t.dataset.lv!==undefined&&canEdit){S.lv={open:t.dataset.lv==="1"};wlv();render();}
   else if(t.dataset&&t.dataset.ckall!==undefined&&canEdit){var on=t.dataset.ckall==="1",c={};if(on)Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(x){c[x]=true;});});S.c=c;var cpx={};if(on)Object.keys(c).forEach(function(x){cpx[x]=[true,true];});S.cp=cpx;dc=1;wc();render();}
-  else if(t.dataset&&t.dataset.adddv&&canEdit){if(!DRAFT)DRAFT=cfgClean(CFG);DRAFT.divs.push({name:"New division",pools:2,size:5,adv:3});render();}
-  else if(t.dataset&&t.dataset.rmdv&&canEdit){if(!DRAFT)DRAFT=cfgClean(CFG);DRAFT.divs.splice(+t.dataset.rmdv,1);render();}
-  else if(t.dataset&&t.dataset.savecfg&&canEdit){if(!DRAFT)DRAFT=cfgClean(CFG);if(!anyScore()&&!fmtErrors(DRAFT).length){saveCfg();ST="Format saved.";render();}else render();}
+  else if(t.dataset&&t.dataset.adddv&&canEdit){if(!DRAFT)DRAFT=mkDraft();DRAFT.divs.push({name:"New division",pools:2,size:5,adv:3});render();}
+  else if(t.dataset&&t.dataset.rmdv&&canEdit){if(!DRAFT)DRAFT=mkDraft();DRAFT.divs.splice(+t.dataset.rmdv,1);render();}
+  else if(t.dataset&&t.dataset.savecfg&&canEdit){if(!DRAFT)DRAFT=mkDraft();if(!anyScore()&&!fmtErrors(DRAFT).length){saveCfg();ST="Format saved.";render();}else render();}
   else if(t.dataset&&t.dataset.undocfg&&canEdit){DRAFT=null;render();}
   else if(t.dataset&&t.dataset.clrall&&canEdit){if(!armedClr){armedClr=true;render();return;}armedClr=false;clearAll();}
 });
