@@ -310,7 +310,17 @@ function stand(pool){
     var a=r[m.a],b=r[m.b];a.pf+=x[0];a.pa+=x[1];b.pf+=x[1];b.pa+=x[0];
     if(x[0]>x[1]){a.w++;b.l++;}else{b.w++;a.l++;}
   });
-  return Object.keys(r).map(function(k){return r[k];}).sort(cmp);
+  return h2hSort(Object.keys(r).map(function(k){return r[k];}).sort(cmp),pool);
+}
+/* teams level on wins: head-to-head first (results between the tied teams), then point differential, then points scored */
+function h2hSort(l,pool){
+  var out=[],i=0;
+  while(i<l.length){var j=i;while(j<l.length&&l[j].w===l[i].w)j++;var g=l.slice(i,j);
+    if(g.length>1){var ids={},mw={};g.forEach(function(x){ids[x.t]=1;mw[x.t]=0;});
+      M.forEach(function(m){if(m.pool!==pool||!ids[m.a]||!ids[m.b])return;var x=sc(m.id);if(!x)return;mw[x[0]>x[1]?m.a:m.b]++;});
+      g.sort(function(a,b){return mw[b.t]-mw[a.t]||cmp(a,b);});}
+    out=out.concat(g);i=j;}
+  return out;
 }
 function seeds(di){
   var d=CFG.divs[di],l=[];d.pl.forEach(function(p){l=l.concat(stand(p).slice(0,d.adv));});
@@ -508,7 +518,8 @@ function fmtBox(full){
     else if(n===2)h+='Seeds 1 and 2 play for gold.';
     h+='</li>';
   });
-  var mp=Math.max.apply(null,CFG.divs.map(function(d){return d.pools;}));h+='<li>Seeds are ranked by wins, then point differential, then points scored'+(mp>2?', across all pools':mp===2?', across both pools':'')+'.</li>';
+  var mp=Math.max.apply(null,CFG.divs.map(function(d){return d.pools;}));h+='<li><b>Ties in a pool:</b> if teams have the same number of wins, head-to-head decides (the team that won the game between them ranks higher). If that doesn\'t settle it, point differential, then points scored.</li>';
+  h+='<li>Playoff seeds are ranked by wins, then point differential, then points scored'+(mp>2?', across all pools':mp===2?', across both pools':'')+'.</li>';
   if(CFG.bronze)h+='<li>The two semifinal losers play for bronze.</li>';
   h+='</ul><table class="fmtt"><tr><th class="l">Round</th><th class="l">Scoring</th></tr><tr><td class="l">Round robin</td><td class="l">'+esc(R.rr)+'</td></tr>';
   if(CFG.divs.some(function(d){return d.n>=6;}))h+='<tr><td class="l">Quarterfinals</td><td class="l">'+esc(R.qf)+'</td></tr>';
@@ -1060,7 +1071,7 @@ function phLabel(g){var t=poType(g.id);return t==="qf"?"Quarterfinal":t==="sf"?"
 function poolMini(me){
   var pool=me.charAt(0),adv=CFG.divs[PDIV[pool]].adv,h='<table class="mini"><tr><th>#</th><th class="l">Pool '+pool+'</th><th>W-L</th><th>+/-</th></tr>';
   stand(pool).forEach(function(x,i){var d=x.pf-x.pa;h+='<tr class="'+(i<adv?'adv':'')+(x.t===me?' me':'')+'"><td>'+(i+1)+'</td><td class="l">'+esc(nm(x.t))+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(d>0?'+':'')+d+'</td></tr>';});
-  return h+'</table><p class="sub">Shaded rows are in a playoff spot right now. Ties are broken by point difference, then points scored.</p>';
+  return h+'</table><p class="sub">Shaded rows are in a playoff spot right now. Teams level on wins are split by head-to-head, then point difference, then points scored.</p>';
 }
 /* --- alerts: buzz, sound and a notification when your match is called --- */
 var ALERT=lsGet("kc_alert")==="1",ACTX=null,WLOCK=null;
