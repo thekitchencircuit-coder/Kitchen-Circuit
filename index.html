@@ -359,19 +359,28 @@ function who(t,ph){
   var s=SDM&&SDM[t];
   return (s?'<small>Seed '+s+'</small> ':'')+esc(nm(t));
 }
-var NXC=null;
+var NXC=null;FRC=null;
 function nextMap(){
   if(NXC)return NXC;NXC={};
   allGames().forEach(function(g){if(sc(g.id)||!g.a||!g.b)return;if(!NXC[g.a])NXC[g.a]=g.id;if(!NXC[g.b])NXC[g.b]=g.id;});
   return NXC;
 }
+/* the match that owns each court right now: the one in progress, otherwise the earliest unplayed one */
+var FRC=null;
+function courtFront(){
+  if(FRC)return FRC;FRC={f:{},c:{}};var G=allGames();
+  G.forEach(function(g){FRC.c[g.id]=g.court;if(started(g.id)&&!FRC.f[g.court])FRC.f[g.court]=g.id;});
+  G.filter(function(g){return !sc(g.id);}).sort(function(x,y){return x.slot-y.slot;}).forEach(function(g){if(!FRC.f[g.court])FRC.f[g.court]=g.id;});
+  return FRC;
+}
+function courtOK(id){var F=courtFront();return F.c[id]!=null&&F.f[F.c[id]]===id;}
 function row(id,lb,a,b,en,cls,pa,pb){
   var v=S.s[id]||["",""],ok=en&&a&&b&&canEdit,has=(v[0]!==""&&v[0]!=null)||(v[1]!==""&&v[1]!=null);
   var allIn=Object.keys(POOLS).every(function(p){return POOLS[p].every(function(x){return S.c[x];});});
-  var ca=!!(a&&S.c[a]),cb=!!(b&&S.c[b]),nx=nextMap(),rdy=ca&&cb&&!sc(id)&&nx[a]===id&&nx[b]===id;
+  var ca=!!(a&&S.c[a]),cb=!!(b&&S.c[b]),nx=nextMap(),cok=a&&b&&!sc(id)?courtOK(id):false,rdy=ca&&cb&&!sc(id)&&nx[a]===id&&nx[b]===id&&cok;
   var ip=started(id);if(ip)rdy=false;
   var ctl='';
-  if(canEdit&&a&&b&&!sc(id)&&en&&(ip||(nx[a]===id&&nx[b]===id)))ctl=ip?'<div class="stl on"><span><b>In progress</b> &middot; '+mins(id)+' min</span><button class="cp" data-unstart="'+id+'">Undo start</button></div>':'<div class="stl"><button class="sb" data-start="'+id+'">Start match</button><span class="sub" style="margin:0">Tap when you hand over the basket</span></div>';
+  if(canEdit&&a&&b&&!sc(id)&&en&&(ip||(nx[a]===id&&nx[b]===id&&cok)))ctl=ip?'<div class="stl on"><span><b>In progress</b> &middot; '+mins(id)+' min</span><button class="cp" data-unstart="'+id+'">Undo start</button></div>':'<div class="stl"><button class="sb" data-start="'+id+'">Start match</button><span class="sub" style="margin:0">Tap when you hand over the basket</span></div>';
   return '<div class="mw'+(ip?' live':'')+'"><div class="m '+(cls||"")+(canEdit?' e':'')+(rdy?' rdy':'')+(ip?' ipm':'')+'"><div class="lb">'+lb+(ip?'<span class="ipb">Live</span>':rdy?'<span class="rb">Ready</span>':'')+'</div><div class="tm r'+(ca?' ci':'')+'">'+(ca&&!allIn?'<i class="okc" title="Checked in">&#10003;</i> ':'')+who(a,pa)+'</div>'+inp(id,0,v[0],ok)+'<span>-</span>'+inp(id,1,v[1],ok)+'<div class="tm'+(cb?' ci':'')+'">'+(cb&&!allIn?'<i class="okc" title="Checked in">&#10003;</i> ':'')+who(b,pb)+'</div>'+
     (canEdit?'<button class="cl" data-clr="'+id+'" title="Clear this score" aria-label="Clear this score"'+(has?'':' disabled')+'>&times;</button>':'')+'</div>'+ctl+liveLine(id,a)+'</div>';
 }
@@ -1097,7 +1106,7 @@ if(TV){document.documentElement.classList.add("tvmode");setInterval(function(){i
   var tvlock=function(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request("screen").catch(function(){});}catch(e){}};
   tvlock();document.addEventListener("visibilitychange",tvlock);document.addEventListener("click",tvlock);}
 
-function render(){NXC=null;
+function render(){NXC=null;FRC=null;
   if(TV){document.getElementById("app").innerHTML=vTV();return;}
   var fns={ref:vRef,roster:vRoster,scores:vScores,standings:vStand,playoffs:vPlay,mine:vMine,teams:vTeams,texts:vTexts};
   var tabs=[["roster","Roster"]];
