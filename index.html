@@ -189,6 +189,30 @@ table.mini{width:100%;margin:6px 0}table.mini tr.me td{font-weight:800}table.min
 .inst .insth{display:flex;gap:10px;align-items:center}.inst .insth img{border-radius:9px;flex:none}.insthelp{margin-top:8px;font-size:.88rem}.insthelp ol{margin:4px 0 0;padding-left:1.3em}.insthelp li{margin:3px 0}
 .infsw{display:flex;gap:8px;align-items:center;font-weight:600;margin:4px 0}.inft,.inftx{width:100%;box-sizing:border-box;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;margin:4px 0}.inftx{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;line-height:1.45}
 .infprev{margin-top:8px}.infprev summary{cursor:pointer;color:var(--accent);font-weight:600}.fmc p{margin:6px 0}.fmc ul{margin:6px 0;padding-left:1.2em}.fmh2{font-weight:700;margin:10px 0 2px}
+html.tvmode body{background:#0b1410;color:#eef5f0;overflow:hidden}html.tvmode .wrap{max-width:none;padding:1.2vw 1.6vw}html.tvmode h1,html.tvmode #nav,html.tvmode #st,html.tvmode .skl{display:none}
+html.tvmode #app{font-size:1.05vw}
+.tvtop{display:flex;align-items:center;gap:2vw;margin-bottom:1vw}.tvtitle{font-size:2.4em;font-weight:900;flex:1;letter-spacing:-.01em}.tvclock{font-size:2.4em;font-weight:800;color:#a7f3d0}
+.tvqr{display:flex;align-items:center;gap:.8vw;background:#fff;color:#0b1410;border-radius:.8vw;padding:.4vw .8vw .4vw .4vw;font-size:.95em;line-height:1.3}.tvqr img{width:5.5vw;height:5.5vw}
+.tvcall{display:flex;flex-wrap:wrap;gap:.5vw .8vw;align-items:center;background:#16a34a;color:#fff;border-radius:.8vw;padding:.6vw 1vw;margin-bottom:.9vw;font-size:1.2em;animation:tvp 2s ease-in-out infinite}
+.tvcl{font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-right:.6vw}.tvci{background:rgba(255,255,255,.18);border-radius:.5vw;padding:.2vw .7vw}
+@keyframes tvp{50%{box-shadow:0 0 0 .5vw rgba(22,163,74,.35)}}
+.tvmain{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1fr);gap:1.2vw;align-items:start}
+.tvgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8vw}.tvgrid.c5{grid-template-columns:repeat(5,minmax(0,1fr))}.tvgrid.c5 .tvc{font-size:.88em;min-height:8vw}.tvci i{font-style:normal;opacity:.75}
+.tvc{background:#13221a;border:.15vw solid #24382c;border-radius:.8vw;padding:.8vw 1vw;min-height:9.5vw}
+.tvc.live{border-color:#f97316}.tvc.call{border-color:#22c55e;background:#123a22}.tvc.free{opacity:.55}
+.tvn{font-size:1.5em;font-weight:900;display:flex;justify-content:space-between;align-items:center;margin-bottom:.4vw}
+.tvtag{font-size:.6em;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:.15vw .5vw;border-radius:.4vw;background:#24382c}
+.tvc.live .tvtag{background:#f97316;color:#1b0b00}.tvc.call .tvtag{background:#22c55e;color:#052e14}
+.tvm{display:flex;justify-content:space-between;gap:.6vw;font-size:1.25em;font-weight:700;padding:.15vw 0}.tvtm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tvtm.tbd{color:#86a493;font-weight:500}
+.tvsc{font-size:1.5em;font-weight:900;color:#fdba74;min-width:2ch;text-align:right;line-height:1}
+.tvx{color:#9fb8a9;font-size:.9em;margin-top:.3vw}.tvnx{color:#86a493;font-size:.85em;margin-top:.4vw;border-top:1px solid #24382c;padding-top:.4vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvs{font-size:1.2em;color:#86a493}
+.tvside{background:#13221a;border:.15vw solid #24382c;border-radius:.8vw;padding:1vw}
+.tvph{font-size:1.4em;font-weight:900;margin-bottom:.6vw}.tvpools{display:grid;gap:.6vw}
+.tvt{width:100%;border-collapse:collapse;font-size:.9em;background:transparent!important;color:#eef5f0;margin:0}html.tvmode .tvt tr,html.tvmode .tvt td,html.tvmode .tvt th{background:transparent!important;color:inherit}html.tvmode .tvt tr.adv td{background:rgba(34,197,94,.16)!important}html.tvmode .tvt th{color:#86a493}html.tvmode .tvt td,html.tvmode .tvt th{font-size:inherit;white-space:nowrap;padding:.18vw .4vw;border-bottom:1px solid #24382c;border-top:0}html.tvmode .tvt{border:0;table-layout:fixed}html.tvmode .tvt td.l,html.tvmode .tvt th.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:64%}html.tvmode .tvt td:first-child,html.tvmode .tvt th:first-child{width:8%}.tvt th{color:#86a493;font-weight:600;text-align:center;padding:.15vw .3vw}.tvt td{text-align:center;padding:.2vw .3vw;border-top:1px solid #24382c}.tvt .l{text-align:left}.tvt tr.adv td{background:rgba(34,197,94,.12)}
+.tvbr{display:grid;grid-template-columns:1fr 1fr;gap:.6vw}.tvbg{border:1px solid #24382c;border-radius:.6vw;padding:.4vw .6vw}.tvbg.live{border-color:#f97316}.tvbl{color:#86a493;font-size:.85em}.tvbt{display:flex;justify-content:space-between;font-weight:600}.tvbt.win{color:#86efac;font-weight:800}
+.tvdots{display:flex;gap:.4vw;justify-content:center;margin-top:.8vw}.tvdots i{width:.6vw;height:.6vw;border-radius:50%;background:#24382c}.tvdots i.on{background:#22c55e}
+.tvwel{text-align:center;margin-top:8vw}.tvwl{font-size:6em;font-weight:900}.tvws{font-size:2em;color:#cfe3d6;margin:1vw 0}.tvwc{font-size:1.4em;color:#86a493}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -1010,7 +1034,71 @@ document.addEventListener("click",function(e){
   render();
 });
 
+/* ===== TV court board: open the site with #tv on the end of the address ===== */
+var TV=/^#tv/i.test(location.hash),TVROT=0,TVLAST=0;
+window.addEventListener("hashchange",function(){if(/^#tv/i.test(location.hash)!==TV)location.reload();});
+function calledGames(G){
+  var seen={},out=[];
+  Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(t){
+    var g=G.filter(function(x){return (x.a===t||x.b===t)&&!sc(x.id);})[0];
+    if(g&&!seen[g.id]&&g.a&&g.b&&!started(g.id)&&myStatus(t).indexOf('nxm go')>=0){seen[g.id]=1;out.push(g);}
+  });});
+  return out;
+}
+function tvTeam(t){return '<span class="tvtm">'+esc(nm(t))+'</span>';}
+function tvCourt(c,G,called){
+  var on=G.filter(function(x){return x.court===c&&!sc(x.id);}).sort(function(x,y){return (started(y.id)?1:0)-(started(x.id)?1:0)||x.slot-y.slot;});
+  var cur=on[0],nxt=on[1],h='<div class="tvc';
+  if(!cur)return h+' free"><div class="tvn">Court '+c+'</div><div class="tvs">'+(G.some(function(x){return x.court===c;})?'Done for the day':'Open')+'</div></div>';
+  var live=started(cur.id),isCalled=called.indexOf(cur)>=0,L=live?refLive(cur.id):null;
+  h+=live?' live':isCalled?' call':' wait';
+  h+='"><div class="tvn">Court '+c+'<span class="tvtag">'+(live?'Live':isCalled?'Called':'Up next')+'</span></div>';
+  h+='<div class="tvm">'+(cur.a?tvTeam(cur.a):'<span class="tvtm tbd">'+esc(cur.lab)+'</span>')+(L?'<span class="tvsc">'+L.st.o.a+'</span>':'')+'</div>';
+  h+='<div class="tvm">'+(cur.b?tvTeam(cur.b):'<span class="tvtm tbd">TBD</span>')+(L?'<span class="tvsc">'+L.st.o.b+'</span>':'')+'</div>';
+  h+='<div class="tvx">'+(cur.po?esc(cur.lab)+' &middot; ':esc(DIVN[cur.di])+' &middot; ')+(live?(L?(esc(nm(cur[L.st.srv]))+' serving &middot; '):'')+mins(cur.id)+' min':isCalled?'Both teams to the scorekeeper table':'Waiting for court')+'</div>';
+  if(nxt)h+='<div class="tvnx">Next: '+(nxt.a&&nxt.b?esc(nm(nxt.a))+' v '+esc(nm(nxt.b)):esc(nxt.lab))+'</div>';
+  return h+'</div>';
+}
+function tvPanels(G){
+  var P=[];
+  CFG.divs.forEach(function(d,di){
+    var h='<div class="tvph">'+esc(d.name)+' &middot; Standings</div><div class="tvpools">';
+    d.pl.forEach(function(p){h+='<table class="tvt"><tr><th>#</th><th class="l">Pool '+p+'</th><th>W-L</th><th>+/-</th></tr>';
+      stand(p).forEach(function(x,i){var df=x.pf-x.pa;h+='<tr'+(i<d.adv?' class="adv"':'')+'><td>'+(i+1)+'</td><td class="l">'+esc(nm(x.t))+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(df>0?'+':'')+df+'</td></tr>';});
+      h+='</table>';});
+    P.push(h+'</div>');
+    var po=G.filter(function(g){return g.po&&g.di===di;});
+    if(done(di)||po.some(function(g){return sc(g.id)||started(g.id);})){
+      var b='<div class="tvph">'+esc(d.name)+' &middot; Playoffs</div><div class="tvbr">';
+      po.forEach(function(g){var x=sc(g.id),L=refLive(g.id);
+        b+='<div class="tvbg'+(started(g.id)?' live':'')+'"><div class="tvbl">'+esc(g.lab)+' &middot; Ct '+g.court+'</div>'+
+          '<div class="tvbt'+(x&&x[0]>x[1]?' win':'')+'">'+(g.a?esc(nm(g.a)):'TBD')+'<b>'+(x?x[0]:L?L.st.o.a:'')+'</b></div>'+
+          '<div class="tvbt'+(x&&x[1]>x[0]?' win':'')+'">'+(g.b?esc(nm(g.b)):'TBD')+'<b>'+(x?x[1]:L?L.st.o.b:'')+'</b></div></div>';});
+      P.push(b+'</div>');
+    }
+  });
+  return P;
+}
+function vTV(){
+  var G=allGames(),now=new Date(),clock=now.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  var h='<div class="tvtop"><div class="tvtitle">Kitchen Circuit Moneyball</div><div class="tvclock">'+clock+'</div><div class="tvqr"><img src="qr.png" alt=""><span>Live scores on your phone<br><b>kitchen-circuit.vercel.app</b></span></div></div>';
+  if(!isOpen()||!M.length){
+    var reg=0;Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(t){if(players(t).some(Boolean))reg++;});});
+    return h+'<div class="tvwel"><div class="tvwl">Welcome</div><div class="tvws">Check in at the scorekeeper table.<br>Scan the code to find your team and turn on match alerts.</div><div class="tvwc">'+reg+' teams &middot; '+CFG.divs.map(function(d){return esc(d.name);}).join(' &middot; ')+'</div></div>';
+  }
+  var called=calledGames(G);
+  if(called.length)h+='<div class="tvcall"><span class="tvcl">To the scorekeeper table now</span>'+called.map(function(g){return '<span class="tvci"><b>Ct '+g.court+'</b> '+esc(nm(g.a))+' <i>v</i> '+esc(nm(g.b))+'</span>';}).join('')+'</div>';
+  h+='<div class="tvmain"><div class="tvgrid'+(COURTS.length>8?' c5':'')+'">'+COURTS.map(function(c){return tvCourt(c,G,called);}).join('')+'</div>';
+  var P=tvPanels(G);if(Date.now()-TVLAST>15000){TVROT++;TVLAST=Date.now();}
+  h+='<div class="tvside">'+(P.length?P[TVROT%P.length]:'')+'<div class="tvdots">'+P.map(function(_,i){return '<i'+(i===TVROT%P.length?' class="on"':'')+'></i>';}).join('')+'</div></div></div>';
+  return h;
+}
+if(TV){document.documentElement.classList.add("tvmode");setInterval(function(){if(typeof render==="function")render();},5000);
+  var tvlock=function(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request("screen").catch(function(){});}catch(e){}};
+  tvlock();document.addEventListener("visibilitychange",tvlock);document.addEventListener("click",tvlock);}
+
 function render(){NXC=null;
+  if(TV){document.getElementById("app").innerHTML=vTV();return;}
   var fns={ref:vRef,roster:vRoster,scores:vScores,standings:vStand,playoffs:vPlay,mine:vMine,teams:vTeams,texts:vTexts};
   var tabs=[["roster","Roster"]];
   if(canEdit||isRefUser()||isOpen())tabs=tabs.concat([["scores","Scores"],["standings","Standings"],["playoffs","Playoffs"],["mine","My team"]]);
