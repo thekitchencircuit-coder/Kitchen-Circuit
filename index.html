@@ -1246,9 +1246,9 @@ function myStatus(me){
   var G=allGames(),g=G.filter(function(x){return (x.a===me||x.b===me)&&!sc(x.id);})[0];
   if(!g)return '<div class="nxm"><div class="nxl">Your next match</div><div class="nxt">No game waiting right now. If you make the playoffs, your next game shows here as soon as the matchup is set.</div></div>';
   var opp=g.a===me?g.b:g.a,why=[];
-  if(!g.po){var mg=M.filter(function(m){return m.id===g.id;})[0],pool=me.charAt(0),un=M.filter(function(m){return m.pool===pool&&!sc(m.id);}),cur=Math.min.apply(null,un.map(function(m){return m.r;}));
+  var byeCard=null;if(!g.po){var mg=M.filter(function(m){return m.id===g.id;})[0],pool=me.charAt(0),un=M.filter(function(m){return m.pool===pool&&!sc(m.id);}),cur=Math.min.apply(null,un.map(function(m){return m.r;}));
     if(mg&&mg.r>cur&&!un.some(function(m){return m.r===cur&&(m.a===me||m.b===me);}))
-      return '<div class="nxm bye"><div class="nxl">Your next match &middot; Bye</div><div class="nxc">You have a bye</div><div class="nxv">Next: Court '+g.court+' vs '+esc(nm(opp))+'</div><div class="nxt">Rest up. This turns green when it\'s your turn to come to the scorekeeper table.'+(S.c[me]?'':(function(){var c=cpOf(me),pl=players(me),miss=[0,1].filter(function(i){return !c[i];}).map(function(i){return pl[i]||('Player '+(i+1));});return '<br><b>Reminder:</b> '+(miss.length===1?esc(miss[0])+' still needs':'both players need')+' to check in at the scorekeeper table.';})())+'</div></div>';}
+      byeCard='<div class="nxm bye"><div class="nxl">Your next match &middot; Bye</div><div class="nxc">You have a bye</div><div class="nxv">Next: Court '+g.court+' vs '+esc(nm(opp))+'</div><div class="nxt">Rest up. This turns green when it\'s your turn to come to the scorekeeper table.'+(S.c[me]?'':(function(){var c=cpOf(me),pl=players(me),miss=[0,1].filter(function(i){return !c[i];}).map(function(i){return pl[i]||('Player '+(i+1));});return '<br><b>Reminder:</b> '+(miss.length===1?esc(miss[0])+' still needs':'both players need')+' to check in at the scorekeeper table.';})())+'</div></div>';}
   if(started(g.id))return '<div class="nxm live"><div class="nxl">Your match &middot; In progress</div><div class="nxc">Court '+g.court+'</div><div class="nxv">vs '+esc(nm(opp))+(g.po?' ('+esc(g.lab)+')':'')+'</div><div class="nxt">Started '+mins(g.id)+' min ago. When you finish, bring the basket and score sheet back to the scorekeeper table.</div>'+liveLine(g.id,me)+'</div>';
   var seen=[];
   function pair(x){return x.a&&x.b?esc(nm(x.a))+' v '+esc(nm(x.b)):esc(x.lab);}
@@ -1259,6 +1259,7 @@ function myStatus(me){
   if(!S.c[me])why.push('you to check in at the table');
   if(!S.c[opp])why.push(esc(nm(opp))+' to check in at the table');
   var lab=(g.po?' ('+esc(g.lab)+')':'');
+  if(why.length&&byeCard)return byeCard;
   if(!why.length)return '<div class="nxm go"><div class="nxl">Your next match &middot; Ready</div><div class="nxc">Come to the scorekeeper table now</div><div class="nxv">vs '+esc(nm(opp))+lab+' &middot; Court '+g.court+'</div><div class="nxt" style="margin-top:6px">Both teams have been called. The scorekeeper will meet you both at the table and hand you the <b>Court '+g.court+'</b> basket.</div></div>';
   if(!S.c[me]){var cpm=cpOf(me),plm=players(me),miss=[0,1].filter(function(i){return !cpm[i];}).map(function(i){return plm[i]||('Player '+(i+1));});
     return '<div class="nxm wait"><div class="nxl">Your next match &middot; Check in first</div><div class="nxc">Check in at the scorekeeper table</div><div class="nxv">vs '+esc(nm(opp))+lab+'</div><div class="nxt">'+(miss.length===1?'Still waiting for <b>'+esc(miss[0])+'</b> to check in. ':'')+'Both players need to check in before you can be called to a court.</div></div>';}
