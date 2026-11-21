@@ -1,0 +1,14 @@
+{
+  "name": "Kitchen Circuit Moneyball",
+  "short_name": "Kitchen Circuit",
+  "description": "Live scores, court calls and standings for Kitchen Circuit pickleball tournaments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#14532d",
+  "theme_color": "#14532d",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+  ]
+}
