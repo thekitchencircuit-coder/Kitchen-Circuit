@@ -1110,7 +1110,8 @@ function tvCheckin(big){
 function vTV(){
   var G=allGames(),now=new Date(),clock=now.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
   var h='<div class="tvtop"><div class="tvtitle">Kitchen Circuit Moneyball</div><div class="tvclock">'+clock+'</div><div class="tvqr"><img src="qr.png" alt=""><span>Live scores on your phone<br><b>kitchen-circuit.vercel.app</b></span></div></div>';
-  if(!isOpen()||!M.length){
+  var ck0=ckCounts(),allIn=ck0.total.n>0&&ck0.total.i===ck0.total.n;
+  if((!isOpen()&&!allIn)||!M.length){
     var reg=0;Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(t){if(players(t).some(Boolean))reg++;});});
     return h+'<div class="tvwel"><div class="tvwl">Welcome</div><div class="tvws">Check in at the scorekeeper table.<br>Scan the code to find your team and turn on match alerts.</div>'+tvCheckin(true)+'<img class="tvwq" src="qr.png" alt="QR code for kitchen-circuit.vercel.app"><div class="tvwc">'+reg+' teams &middot; '+CFG.divs.map(function(d){return esc(d.name);}).join(' &middot; ')+'</div></div>';
   }
