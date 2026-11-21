@@ -1214,8 +1214,10 @@ function fireCall(g,me){
 function checkCall(){
   if(!ALERT||!MY||!M.length)return;
   var G=allGames(),g=G.filter(function(x){return (x.a===MY||x.b===MY)&&!sc(x.id);})[0];if(!g)return;
-  if(myStatus(MY).indexOf('nxm go')<0)return;
-  var k="kc_called_"+g.id+"_"+MY;if(lsGet(k))return;lsSet(k,"1");fireCall(g,MY);
+  var k="kc_called_"+g.id+"_"+MY;
+  /* not called (any more): forget it, so a later call for this same match alerts again (e.g. after a score is cleared) */
+  if(myStatus(MY).indexOf('nxm go')<0){if(lsGet(k))lsSet(k,null);return;}
+  if(lsGet(k))return;lsSet(k,"1");fireCall(g,MY);
 }
 document.addEventListener("click",function(e){
   var t=e.target.closest?e.target.closest("[data-alert],[data-covx],[data-inst]"):null;if(!t)return;var d=t.dataset;
