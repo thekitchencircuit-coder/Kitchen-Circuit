@@ -506,7 +506,7 @@ function fmtBox(full){
     else if(n===2)h+='Seeds 1 and 2 play for gold.';
     h+='</li>';
   });
-  h+='<li>Seeds are ranked by wins, then point differential, then points scored, across both pools.</li>';
+  var mp=Math.max.apply(null,CFG.divs.map(function(d){return d.pools;}));h+='<li>Seeds are ranked by wins, then point differential, then points scored'+(mp>2?', across all pools':mp===2?', across both pools':'')+'.</li>';
   if(CFG.bronze)h+='<li>The two semifinal losers play for bronze.</li>';
   h+='</ul><table class="fmtt"><tr><th class="l">Round</th><th class="l">Scoring</th></tr><tr><td class="l">Round robin</td><td class="l">'+esc(R.rr)+'</td></tr>';
   if(CFG.divs.some(function(d){return d.n>=6;}))h+='<tr><td class="l">Quarterfinals</td><td class="l">'+esc(R.qf)+'</td></tr>';
@@ -663,7 +663,7 @@ function vRoster(){
       h+='</table><p class="sub">Teams on the waitlist move in, in order, if a spot opens.</p></div>';}
     h+='</div>';
   });
-  return h+rulesBlock();
+  return h+fmtBox(false)+rulesBlock();
 }
 function vPlayerView(){
   var o=!!S.lv.open,auto=!o&&isOpen();
