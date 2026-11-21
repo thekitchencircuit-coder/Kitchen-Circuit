@@ -952,7 +952,10 @@ function render(){NXC=null;
   if(!tabs.some(function(x){return x[0]===tab;}))tab=isOpen()||canEdit?"standings":"roster";
   document.getElementById("nav").innerHTML=tabs.map(function(t){return '<button data-t="'+t[0]+'"'+(t[0]===tab?' class="on"':'')+'>'+t[1]+'</button>';}).join('');
   document.getElementById("st").textContent=ST;
-  document.getElementById("app").innerHTML=fns[tab]();if(tab==="teams")filterTeams();if(tab==="roster")filterRoster();
+  var fa=document.activeElement,fk=null,fs=null;
+  if(fa&&fa.tagName==="INPUT"&&fa.type!=="checkbox"){var ds2=fa.dataset;["id|i","pn","ph","tm","wlnew","srch","rsrch","cf","cr","dv"].some(function(k){var ks=k.split("|");if(ds2[ks[0]]===undefined)return false;fk='input'+ks.map(function(x){return '[data-'+x+'="'+String(ds2[x]).replace(/"/g,'\\"')+'"]';}).join('');return true;});try{fs=fa.selectionStart;}catch(e){}}
+  document.getElementById("app").innerHTML=fns[tab]();
+  if(fk){var nf=document.querySelector(fk);if(nf&&!nf.disabled){nf.focus();try{if(fs!=null)nf.setSelectionRange(fs,fs);}catch(e){}}}if(tab==="teams")filterTeams();if(tab==="roster")filterRoster();
   Array.prototype.forEach.call(document.querySelectorAll("select[data-f]"),function(x){x.value=F[x.dataset.f];});
   try{checkCall();}catch(e){}
 }
@@ -1033,14 +1036,14 @@ document.addEventListener("click",function(e){
   if(d.covx){var o=document.getElementById("callov");if(o)o.style.display="none";return;}
   if(d.inst){if(INSTALL){INSTALL.prompt();INSTALL.userChoice.then(function(){INSTALL=null;render();});}return;}
   if(d.alert==="1"){ALERT=true;lsSet("kc_alert","1");beep();keepAwake();
-    try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().then(function(){render();});}catch(e2){}}
+    try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().then(function(){refresh();});}catch(e2){}}
   else if(d.alert==="0"){ALERT=false;lsSet("kc_alert",null);try{if(WLOCK)WLOCK.release();}catch(e3){}}
   else if(d.alert==="test"){var G=allGames(),g=G.filter(function(x){return (x.a===MY||x.b===MY)&&!sc(x.id);})[0]||{court:"?",a:MY,b:""};fireCall(g,MY);return;}
   render();
 });
 /* --- add to home screen --- */
 var INSTALL=null;
-window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();INSTALL=e;if(typeof render==="function")render();});
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();INSTALL=e;refresh();});
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(function(){});
 function installBox(){
   var standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone;if(standalone||lsGet("kc_inst_x"))return '';
@@ -1085,7 +1088,7 @@ function vMine(){
   h+='<div class="olk '+o.cls+'">'+esc(o.t)+'</div>'+dayList(MY)+poolMini(MY)+installBox();
   return h+rulesBlock();
 }
-function werr(e){if(e&&e.code==="invalid_argument"){canEdit=false;ST="Live view. Only the scorekeeper can enter scores.";}else{ST="Could not save: "+((e&&(e.code||e.message))||e);}render();}
+function werr(e){if(e&&e.code==="invalid_argument"){canEdit=false;ST="Live view. Only the scorekeeper can enter scores.";}else{ST="Could not save: "+((e&&(e.code||e.message))||e);}var el=document.getElementById("st");if(el)el.textContent=ST;if(!typing())render();}
 
 /* ---- sync: every device (scorekeeper phone and computer too) takes in updates from the others,
    but never while you are typing or while your own save is still on its way ---- */
@@ -1172,7 +1175,8 @@ document.addEventListener("click",function(e){
   else if(t.dataset&&t.dataset.undocfg&&canEdit){DRAFT=null;render();}
   else if(t.dataset&&t.dataset.clrall&&canEdit){if(!armedClr){armedClr=true;render();return;}armedClr=false;clearAll();}
 });
-function refresh(){var a=document.activeElement;if(canEdit&&a&&a.tagName==="INPUT")return;render();}
+function typing(){var a=document.activeElement;return !!(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA")&&a.type!=="checkbox");}
+function refresh(){if(typing())return;render();}
 function initDb(){
   if(!(window.claude&&claude.use))return;
   S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{}};setCfg(null);ST="Connecting to live scores...";
