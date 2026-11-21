@@ -1105,7 +1105,7 @@ function ckCounts(){
 function tvCheckin(big){
   var k=ckCounts();if(!k.total.n)return '';
   function bar(c,lab){var pc=c.n?Math.round(100*c.i/c.n):0;return '<div class="tvck'+(c.i===c.n?' done':'')+'"><div class="tvckl">'+esc(lab)+'</div><div class="tvckn"><b>'+c.i+'</b> / '+c.n+'</div><div class="tvckb"><i style="width:'+pc+'%"></i></div></div>';}
-  return '<div class="tvcks'+(big?' big':'')+'"><div class="tvckh">Players checked in</div>'+k.divs.map(function(c){return bar(c,c.name);}).join('')+bar(k.total,"Total")+'</div>';
+  return '<div class="tvcks'+(big?' big':'')+'"><div class="tvckh">Players checked in</div>'+k.divs.map(function(c){return bar(c,c.name);}).join('')+'</div>';
 }
 function vTV(){
   var G=allGames(),now=new Date(),clock=now.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
