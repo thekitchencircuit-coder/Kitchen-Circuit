@@ -187,6 +187,8 @@ table.mini{width:100%;margin:6px 0}table.mini tr.me td{font-weight:800}table.min
 .covl{font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:.85rem}.covc{font-size:2.6rem;font-weight:900;margin:6px 0}.covt{font-size:1.05rem;margin-bottom:16px}.cov button{width:100%;padding:14px;border:0;border-radius:10px;background:#fff;color:#14532d;font:inherit;font-weight:800;font-size:1.05rem}
 @keyframes covp{50%{transform:scale(1.04)}}
 .inst .insth{display:flex;gap:10px;align-items:center}.inst .insth img{border-radius:9px;flex:none}.insthelp{margin-top:8px;font-size:.88rem}.insthelp ol{margin:4px 0 0;padding-left:1.3em}.insthelp li{margin:3px 0}
+.infsw{display:flex;gap:8px;align-items:center;font-weight:600;margin:4px 0}.inft,.inftx{width:100%;box-sizing:border-box;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;margin:4px 0}.inftx{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;line-height:1.45}
+.infprev{margin-top:8px}.infprev summary{cursor:pointer;color:var(--accent);font-weight:600}.fmc p{margin:6px 0}.fmc ul{margin:6px 0;padding-left:1.2em}.fmh2{font-weight:700;margin:10px 0 2px}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -518,10 +520,64 @@ function fmtBox(full){
   return h+'</div>';
 }
 var RULESOPEN=false;try{RULESOPEN=localStorage.getItem("pbrules")==="1";}catch(e){}
-function rulesBlock(){return '<details class="rulesd"'+(RULESOPEN?' open':'')+'><summary>Format and rules</summary>'+fmtBox(true)+'</details>';}
+function rulesBlock(){return '<details class="rulesd"'+(RULESOPEN?' open':'')+'><summary>'+esc(infTitle("ev"))+'</summary>'+infBox("ev")+'</details>';}
+/* ===== Player info boxes: event format + how the playoffs work. Editable text, and a Show-on-Roster switch for each ===== */
+var INFD={};
+function INF(k){var i=(S.inf||{})[k]||{};return {show:i.show!==false,title:i.title||"",txt:i.txt||""};}
+var INFDEF={ev:"Format and rules",po:"How the playoffs work"};
+function infTitle(k){return INF(k).title||INFDEF[k];}
+function richTxt(t){
+  var lines=String(t).split("\n"),h="",inList=false;
+  function inl(x){return esc(x).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");}
+  lines.forEach(function(l){var x=l.trim();
+    if(/^[-*•]\s+/.test(x)){if(!inList){h+="<ul>";inList=true;}h+="<li>"+inl(x.replace(/^[-*•]\s+/,""))+"</li>";return;}
+    if(inList){h+="</ul>";inList=false;}
+    if(!x)return;
+    if(/^#+\s+/.test(x))h+='<div class="fmh2">'+inl(x.replace(/^#+\s+/,""))+"</div>";else h+="<p>"+inl(x)+"</p>";
+  });
+  if(inList)h+="</ul>";return h;
+}
+function infBox(k){var i=INF(k);if(!i.txt)return k==="ev"?fmtBox(true):fmtBox(false);return '<div class="fmt"><div class="fmh">'+esc(infTitle(k))+'</div><div class="fmc">'+richTxt(i.txt)+'</div></div>';}
+function autoTxt(k){
+  var d=document.createElement("div");d.innerHTML=k==="ev"?fmtBox(true):fmtBox(false);var out=[];
+  Array.prototype.forEach.call(d.querySelectorAll("li, tr"),function(el){
+    if(el.tagName==="TR"){var c=el.querySelectorAll("td");if(c.length===2)out.push("- "+c[0].textContent+": "+c[1].textContent);return;}
+    var b=el.querySelector("b");out.push("- "+(b?"**"+b.textContent.replace(/:$/,"")+":** "+el.textContent.slice(b.textContent.length).trim():el.textContent));
+  });
+  return out.join("\n");
+}
+function winf(){if(!db){save();return;}var v=JSON.parse(JSON.stringify(S.inf||{}));queueSave("inf",function(){return db.doc("meta/info").set({i:v});},function(){WT.inf=Date.now();});}
+function setInf(k,p){S.inf=Object.assign({},S.inf||{});S.inf[k]=Object.assign({},(S.inf||{})[k]||{},p);winf();}
+function vInfo(){
+  var h='<h2 class="dvh">Player info boxes</h2><p class="sub">These boxes explain the event to players. Leave the text empty to use the automatic version, built from your format above. Write your own to replace it. Start a line with <b>-</b> for a bullet, wrap words in <b>**</b> for bold.</p>';
+  ["ev","po"].forEach(function(k){
+    var i=INF(k),d=INFD[k],txt=d?d.txt:i.txt,ttl=d?d.title:i.title,dirty=!!d&&(d.txt!==i.txt||d.title!==i.title);
+    h+='<div class="wlb"><h3>'+(k==="ev"?"Event format":"How the playoffs work")+' <span class="pc">'+(i.txt?'custom text':'automatic')+'</span></h3>';
+    h+='<label class="infsw"><input type="checkbox" data-infshow="'+k+'"'+(i.show?' checked':'')+'> Show on the Roster</label>';
+    h+='<p class="sub" style="margin:2px 0 6px">'+(k==="ev"?'Also shown on My team as the "Format and rules" dropdown.':'Always shown at the top of the Playoffs tab.')+'</p>';
+    h+='<input type="text" class="inft" data-inftitle="'+k+'" value="'+esc(ttl)+'" placeholder="Title: '+esc(INFDEF[k])+'">';
+    h+='<textarea class="inftx" data-inftxt="'+k+'" rows="'+(txt?Math.min(16,txt.split("\n").length+2):4)+'" placeholder="Empty = automatic text">'+esc(txt)+'</textarea>';
+    h+='<div class="alr"><button class="sb" data-infsave="'+k+'"'+(dirty?'':' disabled')+'>Save</button><button class="cp" data-infauto="'+k+'">Start from automatic text</button>'+(i.txt||txt?'<button class="cp" data-infreset="'+k+'">Back to automatic</button>':'')+'</div>';
+    h+='<details class="infprev"><summary>Preview</summary>'+(function(){var sv=S.inf;S.inf=Object.assign({},S.inf||{});S.inf[k]=Object.assign({},i,{txt:txt,title:ttl});var b=infBox(k);S.inf=sv;return b;})()+'</details></div>';
+  });
+  return h;
+}
+document.addEventListener("input",function(e){var t=e.target,d=t.dataset;if(!d)return;
+  var k=d.inftxt||d.inftitle;if(!k)return;var i=INF(k);INFD[k]=INFD[k]||{txt:i.txt,title:i.title};
+  if(d.inftxt)INFD[k].txt=t.value;else INFD[k].title=t.value;
+  var b=document.querySelector('[data-infsave="'+k+'"]');if(b)b.disabled=false;});
+document.addEventListener("change",function(e){var t=e.target;if(t&&t.dataset&&t.dataset.infshow&&canEdit){setInf(t.dataset.infshow,{show:t.checked});setTimeout(refresh,0);}});
+document.addEventListener("click",function(e){
+  var t=e.target.closest?e.target.closest("[data-infsave],[data-infauto],[data-infreset]"):null;if(!t||!canEdit)return;var d=t.dataset;
+  if(d.infsave){var k=d.infsave,x=INFD[k];if(x){setInf(k,{txt:x.txt.trim(),title:x.title.trim()});delete INFD[k];ST="Saved.";}}
+  else if(d.infauto){var k2=d.infauto,i2=INF(k2);INFD[k2]={txt:autoTxt(k2),title:(INFD[k2]&&INFD[k2].title)||i2.title||INFDEF[k2]};}
+  else if(d.infreset){var k3=d.infreset;delete INFD[k3];setInf(k3,{txt:"",title:""});}
+  render();
+});
+
 document.addEventListener("toggle",function(e){var t=e.target;if(t&&t.classList&&t.classList.contains("rulesd")){RULESOPEN=t.open;try{localStorage.setItem("pbrules",RULESOPEN?"1":"0");}catch(x){}}},true);
 function vPlay(){
-  var h=fmtBox(false);CFG.divs.forEach(function(d,di){h+=bracket(di);});
+  var h=infBox("po");CFG.divs.forEach(function(d,di){h+=bracket(di);});
   var ov=COURTS.filter(function(c){return CEND[c]>CFG.close;});
   if(ov.length)h+='<p class="sub">If a playoff game can\'t start on its court by '+hhmm(CFG.close-15)+', play it on court '+ov.join(' or ')+', booked until '+hhmm(CFG.ovclose)+'.</p>';
   return h;
@@ -645,7 +701,7 @@ function vRoster(){
   var nTeams=0;Object.keys(POOLS).forEach(function(p){nTeams+=POOLS[p].length;});
   var h='';
   h+=installBox();
-  if(!isOpen())h+='<div class="fmt"><div class="fmh">Tournament roster</div><p class="sub" style="margin:2px 0 0">Live scores, standings and your court calls open here when the tournament starts. Find your name below, and check the format and rules at the bottom.</p></div>';
+  if(!isOpen())h+='<div class="fmt"><div class="fmh">Tournament roster</div><p class="sub" style="margin:2px 0 0">Live scores, standings and your court calls open here when the tournament starts. Find your name below'+(INF("ev").show||INF("po").show?', and check the format at the bottom':'')+'.</p></div>';
   h+='<input type="search" class="srch" data-rsrch="1" value="'+esc(RSEARCH)+'" placeholder="Find your name or team" aria-label="Search the roster"><p class="sub" id="rnores" style="display:none">No player or team matches that search.</p>';
   var reg=0;Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(t){if(players(t).some(Boolean))reg++;});});
   h+='<p class="sub">'+CFG.divs.length+' divisions &middot; '+reg+' of '+nTeams+' teams registered</p>';
@@ -663,7 +719,7 @@ function vRoster(){
       h+='</table><p class="sub">Teams on the waitlist move in, in order, if a spot opens.</p></div>';}
     h+='</div>';
   });
-  return h+fmtBox(false)+rulesBlock();
+  return h+(INF("po").show?infBox("po"):'')+(INF("ev").show?rulesBlock():'');
 }
 function vPlayerView(){
   var o=!!S.lv.open,auto=!o&&isOpen();
@@ -691,7 +747,7 @@ function vTeams(){
     });
     h+='</div></div>';
   });
-  h+=vWait()+vPlayerView()+vStats()+vFormat();
+  h+=vWait()+vPlayerView()+vStats()+vFormat()+vInfo();
   return h;
 }
 /* ---- waitlists, one per division ---- */
@@ -1109,7 +1165,7 @@ function tryApply(){
     S.s=x;delete SNAP.s;ch=true;}
   if(SNAP.f){if(!(WT.f>SNAP.f.t)){setCfg(SNAP.f.v);DRAFT=null;}delete SNAP.f;ch=true;}
   if(SNAP.rf&&PEND===0){if(!(WT.rf>SNAP.rf.t))S.rf=SNAP.rf.v;delete SNAP.rf;ch=true;}
-  ["n","c","p","mv","st","en","cp","pl","lv","wl"].forEach(function(k){if(SNAP[k]){if(!(WT[k]>SNAP[k].t)){S[k]=SNAP[k].v;if(k==="n")S.nb=SNAP[k].nb;}delete SNAP[k];ch=true;}});
+  ["n","c","p","mv","st","en","cp","pl","lv","wl","inf"].forEach(function(k){if(SNAP[k]){if(!(WT[k]>SNAP[k].t)){S[k]=SNAP[k].v;if(k==="n")S.nb=SNAP[k].nb;}delete SNAP[k];ch=true;}});
   if(ch)render();
 }
 function queueSave(key,fn,done){
@@ -1182,16 +1238,17 @@ function typing(){var a=document.activeElement;return !!(a&&(a.tagName==="INPUT"
 function refresh(){if(typing())return;render();}
 function initDb(){
   if(!(window.claude&&claude.use))return;
-  S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{}};setCfg(null);ST="Connecting to live scores...";
+  S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{},inf:{}};setCfg(null);ST="Connecting to live scores...";
   claude.use("db").then(function(d){
     if(!d){ST="Sign in to Claude to see live scores.";render();return;}
-    db=d;S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{}};canEdit=false;ST="Connecting to live scores...";render();
+    db=d;S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{},inf:{}};canEdit=false;ST="Connecting to live scores...";render();
     var tm=setTimeout(function(){ST="Cannot reach live scores yet. What you see may be out of date.";render();},10000);
     function ok(){clearTimeout(tm);ST=canEdit?"Scorekeeper mode. Scores save live.":isRefUser()?"Referee mode. Pick your match on the Referee tab.":"Live view. Updates automatically.";}
     db.collection("scores").onSnapshot(function(snap){ld.s=1;var x={};snap.docs.forEach(function(y){var v=y.data();if(v)x[y.id]=[v.a,v.b];});SNAP.s={v:x,t:Date.now()};ok();tryApply();},function(){ST="Live scores are unavailable right now.";render();});
     db.doc("meta/names").onSnapshot(function(y){ld.n=1;var v=y.exists?y.data():null;var tn=Date.now();SNAP.n={v:Object.assign({},(v&&v.n)||{}),nb:!!(v&&v.blank),t:tn};SNAP.pl={v:JSON.parse(JSON.stringify((v&&v.pl)||{})),t:tn};ok();tryApply();},function(){});
     db.doc("meta/checkin").onSnapshot(function(y){ld.c=1;var v=y.exists?y.data():null;var tc=Date.now();SNAP.c={v:Object.assign({},(v&&v.c)||{}),t:tc};SNAP.cp={v:JSON.parse(JSON.stringify((v&&v.p)||{})),t:tc};tryApply();},function(){});
     db.doc("meta/format").onSnapshot(function(y){var v=y.exists?y.data():null,c=null;try{c=v&&v.j?JSON.parse(v.j):null;}catch(e){}SNAP.f={v:c,t:Date.now()};tryApply();},function(){});
+    db.doc("meta/info").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.inf={v:(v&&v.i)||{},t:Date.now()};tryApply();},function(){});
     db.doc("meta/waitlist").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.wl={v:(v&&v.w)||{},t:Date.now()};tryApply();},function(){});
     db.doc("meta/live").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.lv={v:{open:!!(v&&v.open)},t:Date.now()};tryApply();},function(){});
     db.doc("meta/ended").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.en={v:Object.assign({},(v&&v.e)||{}),t:Date.now()};tryApply();},function(){});
