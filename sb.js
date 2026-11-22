@@ -26,6 +26,21 @@
     var m=(e&&e.message)||String(e);
     return {message:(e&&e.code?e.code+" ":"")+m};
   }
+  /* a write refused for lack of permission usually means this device's sign-in lapsed:
+     refresh the sign-in and retry once; if there is no sign-in left, say so plainly */
+  function signedOut(){
+    session=null;editor=false;referee=false;window.KC_ROLE={editor:false,ref:false};footer("Your sign-in on this device has expired. Sign in again to keep entering scores.");
+    var st=document.getElementById("st");if(st)st.textContent="Signed out on this device. Sign in again at the bottom of the page.";
+  }
+  function withRetry(run){
+    return run().then(function(r){
+      if(!r.error||String(r.error.code)!=="42501")return r;
+      return sb.auth.refreshSession().then(function(x){
+        if(!(x&&x.data&&x.data.session)){signedOut();return {error:{code:"",message:"signed out on this device. Sign in again at the bottom of the page."}};}
+        session=x.data.session;return run();
+      });
+    });
+  }
   function load(t){
     if(t==="private_docs"&&!session){loaded[t]=true;cache[t]={};fireAll(t);return Promise.resolve();}
     var t0=Date.now();
@@ -46,8 +61,8 @@
   function ref(path){
     var t=tbl(path);
     return {
-      set:function(v){var d=clone(v);wrote[path]=Date.now();return sb.from(t).upsert({path:path,data:d,updated_at:new Date().toISOString()}).then(function(r){if(r.error)throw mapErr(r.error);cache[t][path]=d;wrote[path]=Date.now();fire(path,t);});},
-      delete:function(){return sb.from(t).delete().eq("path",path).then(function(r){if(r.error)throw mapErr(r.error);delete cache[t][path];wrote[path]=Date.now();fire(path,t);});},
+      set:function(v){var d=clone(v);wrote[path]=Date.now();return withRetry(function(){return sb.from(t).upsert({path:path,data:d,updated_at:new Date().toISOString()});}).then(function(r){if(r.error)throw mapErr(r.error);cache[t][path]=d;wrote[path]=Date.now();fire(path,t);});},
+      delete:function(){return withRetry(function(){return sb.from(t).delete().eq("path",path);}).then(function(r){if(r.error)throw mapErr(r.error);delete cache[t][path];wrote[path]=Date.now();fire(path,t);});},
       onSnapshot:function(cb,err){var s={t:t,key:path,doc:true,cb:cb,err:err};subs.push(s);setTimeout(function(){emit(s);},0);return function(){subs.splice(subs.indexOf(s),1);};}
     };
   }
@@ -69,7 +84,8 @@
       .on("postgres_changes",{event:"*",schema:"public",table:"private_docs"},onChange("private_docs"))
       .subscribe(function(st){if(st==="SUBSCRIBED")loadAll();});
     setInterval(function(){if(!document.hidden)loadAll();},60000);
-    document.addEventListener("visibilitychange",function(){if(!document.hidden)loadAll();});
+    document.addEventListener("visibilitychange",function(){if(document.hidden)return;loadAll();
+      if(editor||referee)sb.auth.getSession().then(function(r){if(!(r&&r.data&&r.data.session))signedOut();});});
     return loadAll();
   });
 
