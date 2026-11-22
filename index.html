@@ -171,6 +171,7 @@ nav button{font-size:.72rem!important;padding:9px 2px!important}
 .rfside{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;opacity:.7}.rfpn{font-weight:700}.rftag{font-size:.72rem;font-weight:700}
 .rfnet{text-align:center;font-size:.7rem;letter-spacing:.3em;background:var(--ink);color:var(--bg);padding:2px}
 .rfrow{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.rfrow .cp{flex:1;min-width:90px;padding:10px 6px}
+.rfcx{width:100%;margin-top:4px;color:#b3261e;border-color:#e6b4ae}.rfcan{border:2px solid #e6b4ae;border-radius:10px;padding:10px 12px;margin-top:6px;font-size:.92rem}
 .rfover{text-align:center;padding:16px;border:2px solid var(--accent);border-radius:12px;margin-top:8px}.rfl2{font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent)}
 .wlh{font-size:.95rem;margin:10px 0 4px}.wlt td{color:var(--muted)}
 .wlb{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px;background:var(--card)}.wlb h3{margin:2px 0 6px}
@@ -910,7 +911,7 @@ function copyText(btn){
   try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(ok,fb);else fb();}catch(e){fb();}
 }
 /* ===== Referee: point-by-point scoring for one match, saved live to ref/<match id> ===== */
-var REFID=null,REFCT="",REFSETUP=null,REFSAVED=null;
+var REFID=null,REFCT="",REFSETUP=null,REFSAVED=null,REFCANCEL=null;
 function RF(){return S.rf||(S.rf={});}
 function isRefUser(){return !!(window.KC_ROLE&&window.KC_ROLE.ref);}
 function canRef(){return canEdit||isRefUser();}
@@ -1016,6 +1017,8 @@ function refScoreView(g,R){
   h+='<div class="rfrow"><button class="cp" data-rfundo="1"'+(R.ev?'':' disabled')+'>Undo</button>';
   if(st.rule.tos)["a","b"].forEach(function(k){h+='<button class="cp" data-rfto="'+k+'"'+(st.to[k]>=st.rule.tos?' disabled':'')+'>Timeout '+esc(players(g[k])[0]||tName(g[k]))+'</button>';});
   h+='<button class="cp" data-rfsw="1">Switch ends</button></div>';
+  h+=REFCANCEL===g.id?'<div class="rfcan"><b>Stop reffing this match?</b> '+(R.ev?'The score so far is kept and the match stays in progress. Another ref can pick this match and carry on from here, or the final score can be entered at the scorekeeper table.':'Nothing has been scored yet, so the match goes back to waiting.')+'<div class="alr"><button class="sb" data-rfcancel="yes">Yes, stop reffing</button><button class="cp" data-rfcancel="no">Keep reffing</button></div></div>'
+    :'<button class="cp rfcx" data-rfcancel="ask">Cancel reffing this match</button>';
   h+='<p class="sub">Tap the team that won each rally. The app works out the point, second server or side out, and moves the server for you.</p>';
   return h;
 }
@@ -1030,15 +1033,23 @@ function vRef(){
 }
 document.addEventListener("change",function(e){var t=e.target;if(t.dataset&&t.dataset.rfct!==undefined){REFCT=t.value;render();}});
 document.addEventListener("click",function(e){
-  var t=e.target.closest?e.target.closest("[data-rfgo],[data-rfback],[data-rffirst],[data-rfpos],[data-rfbegin],[data-rfpt],[data-rfundo],[data-rfto],[data-rfsw],[data-rfsave]"):null;
+  var t=e.target.closest?e.target.closest("[data-rfgo],[data-rfback],[data-rffirst],[data-rfpos],[data-rfbegin],[data-rfpt],[data-rfundo],[data-rfto],[data-rfsw],[data-rfsave],[data-rfcancel]"):null;
   if(!t||!canRef())return;var d=t.dataset,R=REFID?RF()[REFID]:null;
-  if(d.rfgo){REFID=d.rfgo;REFSETUP=null;REFSAVED=null;}
-  else if(d.rfback!==undefined){REFID=null;REFSETUP=null;REFSAVED=null;}
+  if(d.rfcancel){
+    if(d.rfcancel==="ask")REFCANCEL=REFID;
+    else if(d.rfcancel==="no")REFCANCEL=null;
+    else if(d.rfcancel==="yes"&&R){var cid=REFID;
+      if(!R.ev){S.rf=Object.assign({},RF());S.rf[cid]={first:"",ev:"",fin:false,cancelled:true,at:Date.now()};wref(cid);
+        if(R.ms&&S.st[cid]){S.st=Object.assign({},S.st);delete S.st[cid];wst();}}
+      REFCANCEL=null;REFID=null;REFSETUP=null;REFSAVED=null;ST="Stopped reffing. Pick another match any time.";}
+  }
+  else if(d.rfgo){REFID=d.rfgo;REFSETUP=null;REFSAVED=null;REFCANCEL=null;}
+  else if(d.rfback!==undefined){REFID=null;REFSETUP=null;REFSAVED=null;REFCANCEL=null;}
   else if(d.rffirst){REFSETUP.first=d.rffirst;}
   else if(d.rfpos){var p=d.rfpos.split("|"),i=+p[1];REFSETUP.pos[p[0]]=[i,1-i];}
   else if(d.rfbegin!==undefined){var P=REFSETUP;if(!(P&&P.first&&P.pos.a&&P.pos.b))return;
-    S.rf=Object.assign({},RF());S.rf[REFID]={first:P.first,pos:P.pos,top:P.top||"a",ev:"",fin:false,at:Date.now()};wref(REFID);
-    if(!S.st[REFID]){S.st=Object.assign({},S.st);S.st[REFID]=Date.now();wst();}}
+    S.rf=Object.assign({},RF());var mk=!S.st[REFID];S.rf[REFID]={first:P.first,pos:P.pos,top:P.top||"a",ev:"",fin:false,at:Date.now(),ms:mk};wref(REFID);
+    if(mk){S.st=Object.assign({},S.st);S.st[REFID]=Date.now();wst();}}
   else if(R&&d.rfpt){var g=refGame(REFID);if(refState(R,g).over)return;S.rf=Object.assign({},RF());S.rf[REFID]=Object.assign({},R,{ev:(R.ev||"")+d.rfpt,at:Date.now()});wref(REFID);if(navigator.vibrate)navigator.vibrate(30);}
   else if(R&&d.rfundo!==undefined){S.rf=Object.assign({},RF());S.rf[REFID]=Object.assign({},R,{ev:String(R.ev||"").slice(0,-1),at:Date.now()});wref(REFID);}
   else if(R&&d.rfto){S.rf=Object.assign({},RF());S.rf[REFID]=Object.assign({},R,{ev:(R.ev||"")+d.rfto.toUpperCase(),at:Date.now()});wref(REFID);}
