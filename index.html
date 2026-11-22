@@ -176,6 +176,7 @@ nav button{font-size:.72rem!important;padding:9px 2px!important}
 .wlb{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px;background:var(--card)}.wlb h3{margin:2px 0 6px}
 .wlr{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}.wln{color:var(--muted);min-width:20px}.wlx{flex:1}
 .wla{display:flex;gap:6px;margin-top:8px}.wla input{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+.psl{margin-top:6px;font-size:.85rem;color:var(--muted)}.psl.ok{color:var(--accent);font-weight:600}
 .alb{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--card);font-size:.9rem}.alb .sb{display:block;width:100%;margin-top:8px;padding:12px}.alb.on{border-color:var(--accent)}.alr{display:flex;gap:6px;margin-top:8px}.alr button{flex:1}
 .olk{border-radius:10px;padding:10px 12px;margin:10px 0;font-weight:600;font-size:.92rem;background:var(--card);border:1px solid var(--line)}.olk.in{border-color:var(--accent);color:var(--accent)}.olk.out{color:var(--muted)}
 .day{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:10px 0;background:var(--card)}.dayh{font-weight:700;padding:8px 12px;border-bottom:1px solid var(--line)}
@@ -1144,6 +1145,7 @@ function render(){NXC=null;FRC=null;
   if(fk){var nf=document.querySelector(fk);if(nf&&!nf.disabled){nf.focus();try{if(fs!=null)nf.setSelectionRange(fs,fs);}catch(e){}}}if(tab==="teams")filterTeams();if(tab==="roster")filterRoster();
   Array.prototype.forEach.call(document.querySelectorAll("select[data-f]"),function(x){x.value=F[x.dataset.f];});
   try{checkCall();}catch(e){}
+  try{notifyCalls();}catch(e){}
 }
 /* ===== My team: whole day, playoff outlook, match-call alerts ===== */
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
@@ -1201,7 +1203,7 @@ function alertBox(){
   if(!MY)return '';
   var notif=("Notification" in window)?Notification.permission:"none",ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=window.matchMedia&&matchMedia("(display-mode: standalone)").matches;
   if(!ALERT)return '<div class="alb"><b>Get alerted when you\'re called.</b> Your phone buzzes and beeps, and the screen stays on while this page is open.<button class="sb" data-alert="1">Turn on match alerts</button></div>';
-  return '<div class="alb on"><b>Match alerts are on</b> for '+esc(nm(MY))+'. Keep this page open; your screen stays on.'+(notif==="denied"?' Notifications are blocked in your browser settings, so you\'ll get the buzz and beep only.':'')+(ios&&!standalone?' On iPhone, add this site to your home screen for the best alerts.':'')+'<span class="alr"><button class="cp" data-alert="test">Test alert</button><button class="cp" data-alert="0">Turn off</button></span></div>';
+  return '<div class="alb on"><b>Match alerts are on</b> for '+esc(nm(MY))+'. Keep this page open; your screen stays on.'+(notif==="denied"?' Notifications are blocked in your browser settings, so you\'ll get the buzz and beep only.':'')+(ios&&!standalone?' On iPhone, add this site to your home screen for the best alerts.':'')+pushLine()+'<span class="alr"><button class="cp" data-alert="test">Test alert</button><button class="cp" data-alert="0">Turn off</button></span></div>';
 }
 function fireCall(g,me){
   var opp=g.a===me?g.b:g.a,title="You're up! Court "+g.court,body="Come to the scorekeeper table now. vs "+nm(opp);
@@ -1224,15 +1226,62 @@ document.addEventListener("click",function(e){
   if(d.covx){var o=document.getElementById("callov");if(o)o.style.display="none";return;}
   if(d.inst){if(INSTALL){INSTALL.prompt();INSTALL.userChoice.then(function(){INSTALL=null;render();});}else{INSTHELP=!INSTHELP;render();}return;}
   if(d.alert==="1"){ALERT=true;lsSet("kc_alert","1");beep();keepAwake();
-    try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().then(function(){refresh();});}catch(e2){}}
-  else if(d.alert==="0"){ALERT=false;lsSet("kc_alert",null);try{if(WLOCK)WLOCK.release();}catch(e3){}}
+    try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().then(function(){pushOn();refresh();});else pushOn();}catch(e2){}}
+  else if(d.alert==="0"){ALERT=false;lsSet("kc_alert",null);pushOff();try{if(WLOCK)WLOCK.release();}catch(e3){}}
   else if(d.alert==="test"){var G=allGames(),g=G.filter(function(x){return (x.a===MY||x.b===MY)&&!sc(x.id);})[0]||{court:"?",a:MY,b:""};fireCall(g,MY);return;}
   render();
 });
+
+/* --- lock-screen push notifications (work even when the site is closed) --- */
+var VAPID_PUB="BJsaltBr7MXlKfvyVnuSGLKDt8PPID1xUy8Kc-naPUQwXWY93MOaa_S_EnbGRKNUK5MwHaqOslO0duJoi8p4V7w";
+var PUSHST=lsGet("kc_push")||"";
+function pushCan(){return "serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window&&location.protocol==="https:";}
+function b64u8(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function setPushSt(v){PUSHST=v;lsSet("kc_push",v||null);refresh();}
+function pushOn(){
+  if(!MY)return Promise.resolve();
+  if(!pushCan()){var ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);setPushSt(ios?"ios":"no");return Promise.resolve();}
+  if(Notification.permission==="denied"){setPushSt("denied");return Promise.resolve();}
+  var team=MY;
+  return navigator.serviceWorker.ready.then(function(reg){
+    return reg.pushManager.getSubscription().then(function(s){return s||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u8(VAPID_PUB)});});
+  }).then(function(sub){
+    if(!window.KC_SB)throw new Error("offline");
+    return window.KC_SB.rpc("save_push",{p_endpoint:sub.endpoint,p_sub:sub.toJSON(),p_team:team}).then(function(r){if(r.error)throw r.error;setPushSt("on");});
+  }).catch(function(e){console.warn("push",e);setPushSt(Notification.permission==="denied"?"denied":"err");});
+}
+function pushOff(){
+  if(!pushCan())return;
+  navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription();}).then(function(sub){
+    if(!sub)return;var ep=sub.endpoint;sub.unsubscribe();if(window.KC_SB)window.KC_SB.rpc("drop_push",{p_endpoint:ep});
+  }).catch(function(){});setPushSt("");
+}
+function pushLine(){
+  var m={on:"Lock-screen notifications are on: you'll be notified even if this page is closed or your phone is locked.",
+    ios:"For notifications when this page is closed, add the site to your home screen (see Get the app on the Roster), open it from there, and turn alerts on again.",
+    no:"This browser can't receive notifications when the page is closed. Keep this page open.",
+    denied:"Notifications are blocked for this site in your phone's settings. Allow them to be notified when the page is closed.",
+    err:"Couldn't turn on lock-screen notifications. Tap Turn off, then Turn on match alerts to try again."};
+  return m[PUSHST]?'<div class="psl'+(PUSHST==="on"?' ok':'')+'">'+m[PUSHST]+'</div>':'';
+}
+/* scorekeeper screen: when a match is called, ask the server to notify both teams' phones */
+var PUSHED={},PUSHQ=null;
+function notifyCalls(){
+  if(!canEdit||!db||!window.KC_SB||!M.length||TV)return;
+  var called=calledGames(allGames()),now={},fresh=[];
+  called.forEach(function(g){now[g.id]=1;if(!PUSHED[g.id]){PUSHED[g.id]=1;fresh.push({id:g.id,court:g.court,a:g.a,b:g.b,an:nm(g.a),bn:nm(g.b)});}});
+  Object.keys(PUSHED).forEach(function(id){if(!now[id])delete PUSHED[id];});
+  if(!fresh.length)return;
+  window.KC_SB.auth.getSession().then(function(r){var tok=r&&r.data&&r.data.session&&r.data.session.access_token;if(!tok)return;
+    return fetch(window.KC_SBURL+"/functions/v1/notify",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok,"apikey":window.KC_SBKEY},body:JSON.stringify({calls:fresh})})
+      .then(function(res){return res.json().catch(function(){return {};}).then(function(j){PUSHQ={t:Date.now(),ok:res.ok,j:j};});});
+  }).catch(function(e){PUSHQ={t:Date.now(),ok:false,j:{error:String(e)}};});
+}
 /* --- add to home screen --- */
 var INSTALL=null;
 window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();INSTALL=e;refresh();});
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(function(){});
+setTimeout(function(){try{if(ALERT&&MY&&pushCan()&&Notification.permission==="granted")pushOn();}catch(e){}},4000);
 var INSTHELP=false;
 function installBox(){
   var standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone;if(standalone)return '';
@@ -1325,7 +1374,7 @@ function wn(){
 document.addEventListener("change",function(e){
   var t=e.target,d=t.dataset;
   if(d.f){F[d.f]=t.value;}
-  else if(d.my!==undefined){MY=t.value;lsSet("kc_my",MY||null);}
+  else if(d.my!==undefined){MY=t.value;lsSet("kc_my",MY||null);if(ALERT&&MY)pushOn();}
   else if(d.ph!==undefined){return;}
   else if(d.srch!==undefined||d.pn!==undefined||d.rsrch!==undefined){return;}
   else if(d.pck!==undefined){if(!canEdit)return;var pq=d.pck.split("|");setPlayer(pq[0],+pq[1],t.checked);}

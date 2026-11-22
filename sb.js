@@ -6,6 +6,7 @@
   var KEY="sb_publishable_Hcm_PozoiTG1ZLhwC4F49A_MXdBKgfZ";
   if(!window.supabase||!window.supabase.createClient||window.claude)return;
   var sb=window.supabase.createClient(URL,KEY);
+  window.KC_SB=sb;window.KC_SBURL=URL;window.KC_SBKEY=KEY;
   var cache={docs:{},private_docs:{}},loaded={docs:false,private_docs:false},subs=[],wrote={},session=null,editor=null,referee=false;
 
   function clone(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));}
