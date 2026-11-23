@@ -58,6 +58,25 @@
     else if(p.new&&p.new.path){cache[t][p.new.path]=p.new.data;fire(p.new.path,t);}
   };}
 
+  /* live connection, with automatic reconnect and a small Live / Reconnecting indicator */
+  var CHAN=null,LIVE="",RETRY=null;
+  function showLive(){
+    var el=document.getElementById("lvst");
+    if(!el){var st=document.getElementById("st");if(!st)return;el=document.createElement("span");el.id="lvst";st.parentNode.insertBefore(el,st.nextSibling);}
+    var ok=LIVE==="SUBSCRIBED";el.className=ok?"ok":"bad";el.textContent=ok?"\u25CF Live":"Reconnecting\u2026";
+  }
+  function connect(){
+    if(RETRY){clearTimeout(RETRY);RETRY=null;}
+    var old=CHAN;CHAN=null;if(old){try{sb.removeChannel(old);}catch(e){}}
+    var ch=sb.channel("kc-live-"+Date.now());CHAN=ch;LIVE="";showLive();
+    ch.on("postgres_changes",{event:"*",schema:"public",table:"docs"},onChange("docs"))
+      .on("postgres_changes",{event:"*",schema:"public",table:"private_docs"},onChange("private_docs"))
+      .subscribe(function(st){
+        if(ch!==CHAN)return;LIVE=st;showLive();
+        if(st==="SUBSCRIBED")loadAll();
+        else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"||st==="CLOSED"){if(!RETRY)RETRY=setTimeout(function(){RETRY=null;connect();},5000);}
+      });
+  }
   function ref(path){
     var t=tbl(path);
     return {
@@ -79,13 +98,13 @@
     function chk(fn){return sb.rpc(fn).then(function(r){return !!(r&&r.data===true);}).catch(function(){return false;});}
     return Promise.all([chk("is_editor"),chk("is_ref")]);
   }).then(function(rl){editor=rl[0];referee=rl[1];window.KC_ROLE={editor:editor,ref:referee};footer();
-    sb.channel("kc-live")
-      .on("postgres_changes",{event:"*",schema:"public",table:"docs"},onChange("docs"))
-      .on("postgres_changes",{event:"*",schema:"public",table:"private_docs"},onChange("private_docs"))
-      .subscribe(function(st){if(st==="SUBSCRIBED")loadAll();});
-    setInterval(function(){if(!document.hidden)loadAll();},60000);
-    document.addEventListener("visibilitychange",function(){if(document.hidden)return;loadAll();
-      if(editor||referee)sb.auth.getSession().then(function(r){if(!(r&&r.data&&r.data.session))signedOut();});});
+    connect();
+    setInterval(function(){if(document.hidden)return;loadAll();if(LIVE!=="SUBSCRIBED")connect();},60000);
+    /* phones freeze pages in the background and drop the live connection: on coming back, catch up and reconnect */
+    function wake(){if(document.hidden)return;loadAll();if(LIVE!=="SUBSCRIBED")connect();
+      if(editor||referee)sb.auth.getSession().then(function(r){if(!(r&&r.data&&r.data.session))signedOut();});}
+    document.addEventListener("visibilitychange",wake);
+    window.addEventListener("pageshow",wake);window.addEventListener("focus",wake);window.addEventListener("online",function(){connect();loadAll();});
     return loadAll();
   });
 
