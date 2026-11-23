@@ -270,7 +270,8 @@ html.tvmode #app{font-size:1.05vw}
 .sltl{font-size:7pt;font-weight:800;letter-spacing:.1em;color:#6b7280}.sltn{font-size:14pt;font-weight:800;line-height:1.15}.sltp{font-size:9pt;color:#374151}
 .sltline{border-bottom:1px solid #9ca3af;height:.3in}
 .slbox{width:.95in;border:2pt solid #111;border-radius:6px;position:relative;flex:none}.slbox span{position:absolute;top:3px;left:0;right:0;text-align:center;font-size:6.5pt;font-weight:800;letter-spacing:.1em;color:#6b7280}
-.slf{font-size:8pt;color:#374151;line-height:1.35;margin-top:auto}.slid{position:absolute;right:0;top:0;font-size:6.5pt;color:#9ca3af}
+.slf{font-size:8pt;color:#374151;line-height:1.35;margin-top:auto}.slin{display:flex;align-items:center;gap:.1in;font-size:9pt;font-weight:700}.slin span{display:inline-block;width:1.1in;height:.4in;border:2pt solid #111;border-radius:6px}
+.slid{position:absolute;right:0;top:0;font-size:6.5pt;color:#9ca3af}
 .slblank{display:inline-block;border-bottom:1.2pt solid #111;width:.8in;height:.28in;vertical-align:bottom}.slblank.s{width:.9in;height:.18in}.slblank.l{width:1.4in;height:.18in}
 .slrt{display:flex;flex-direction:column;gap:.1in}.slph{font-size:10pt;font-weight:800}.slph span{font-weight:400;color:#6b7280;font-size:8pt}
 .sltk{border:1pt solid #d1d5db;border-radius:6px;padding:.06in .08in}.sltkn{font-size:9.5pt;font-weight:700;margin-bottom:.05in;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -280,7 +281,7 @@ html.tvmode #app{font-size:1.05vw}
 .csh{display:flex;align-items:flex-end;gap:.25in}.csc{font-size:26pt;font-weight:900;line-height:1;white-space:nowrap}.csi{font-size:8pt;color:#374151;line-height:1.35}
 .cstb{width:100%;border-collapse:collapse;table-layout:fixed}
 .cstb th{font-size:7pt;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;text-align:center;padding:0 0 3px;border-bottom:1.5pt solid #111}
-.cstb th:nth-child(1){width:.25in}.cstb th:nth-child(2){width:.95in}.cstb th:nth-child(4),.cstb th:nth-child(6){width:.62in}.cstb th:nth-child(5){width:.28in}
+.cstb th:nth-child(1){width:.25in}.cstb th:nth-child(2){width:.95in}.cstb th:nth-child(4),.cstb th:nth-child(6){width:.62in}.cstb th:nth-child(5){width:.28in}.cstb th:nth-child(8){width:.62in;line-height:1.1}.cstb td.csin{background:#fff!important;border:2pt solid #111}
 .cstb td{border-bottom:1pt solid #9ca3af;height:.47in;padding:0 .05in;vertical-align:middle;font-size:9.5pt}
 .cstb tr:nth-child(odd) td{background:#f3f4f6}
 .cstb td.csn{text-align:center;font-weight:800;color:#6b7280}
@@ -1520,7 +1521,7 @@ function slipHtml(g){
   var L='<div class="sll">'+head+'<div class="slr">'+rl+'</div>';
   [0,1].forEach(function(i){var t=blank?null:(i?g.b:g.a);
     L+='<div class="slrow">'+slipTeam(t,ph[i],i+1)+'<div class="slbox"><span>SCORE</span></div></div>';});
-  L+='<div class="slf">Write your score in <b>your own team\'s</b> box. Winner circles their name.<br>Bring this sheet and the basket back to the scorekeeper table.</div>'+(g?'<div class="slid">'+esc(g.id)+'</div>':'')+'</div>';
+  L+='<div class="slin">Winner initials <span></span></div><div class="slf">Write your score in <b>your own team\'s</b> box. The winning team initials above to confirm.<br>Bring this sheet and the basket back to the scorekeeper table.</div>'+(g?'<div class="slid">'+esc(g.id)+'</div>':'')+'</div>';
   var nmA=blank?'Team 1':(g.a?nm(g.a):ph[0]),nmB=blank?'Team 2':(g.b?nm(g.b):ph[1]);
   var cells='';for(var k=1;k<=17;k++)cells+='<i>'+k+'</i>';
   var Rt='<div class="slrt"><div class="slph">Point tracker <span>(cross off each point)</span></div>'+
@@ -1537,14 +1538,14 @@ function csRow(g,i){
   function team(t,p){return t?'<b>'+esc(nm(t))+'</b>'+(tnm(t)&&plnames(t)?'<small>'+esc(plnames(t))+'</small>':''):(p?'<em>'+esc(p)+'</em>':'<span class="csline"></span>');}
   var info=g?(g.po?esc(g.lab.replace(DIVN[g.di]+" ","")):(function(){var m=String(g.id).match(/^([A-Z])r(\d+)/);return 'Pool '+(m?m[1]+' &middot; Rd '+(+m[2]+1):'');})()):'';
   return '<tr><td class="csn">'+(i+1)+'</td><td class="cst">'+(g?'<b>'+T[g.slot].replace(" PM","")+'</b><small>'+(g?esc(DIVN[g.di]):'')+'<br>'+info+'</small>':'<span class="csline s"></span>')+'</td>'+
-    '<td class="csa">'+team(g&&g.a,ph[0])+'</td><td class="csbx"></td><td class="csv">vs</td><td class="csbx"></td><td class="csb">'+team(g&&g.b,ph[1])+'</td></tr>';
+    '<td class="csa">'+team(g&&g.a,ph[0])+'</td><td class="csbx"></td><td class="csv">vs</td><td class="csbx"></td><td class="csb">'+team(g&&g.b,ph[1])+'</td><td class="csin"></td></tr>';
 }
 function courtSheet(c,rows,part,parts){
   var seen={},parts2=[];
   rows.filter(Boolean).forEach(function(g){var r=refRule(g),lab=g.po?(r.t==="gold"?"Gold":"Playoffs"):"Pool play",txt=lab+': to '+r.to+', win by 2'+(r.cap?', cap '+r.cap:'')+(r.sw?', switch ends at '+r.sw:'');if(!seen[txt]){seen[txt]=1;parts2.push(txt);}});
   var rl=parts2.join(' &middot; ');
-  var h='<div class="slip cs"><div class="csh"><div class="csc">COURT '+(c==null?'<span class="slblank"></span>':c)+'</div><div class="csi">'+(parts>1?'Sheet '+part+' of '+parts+' &middot; ':'')+rl+'<br><b>Write each score in the box right next to that team\'s name.</b> Play matches in order, top to bottom.</div></div>';
-  h+='<table class="cstb"><tr><th>#</th><th>Time</th><th class="csa">Team 1</th><th>Score</th><th></th><th>Score</th><th class="csb">Team 2</th></tr>';
+  var h='<div class="slip cs"><div class="csh"><div class="csc">COURT '+(c==null?'<span class="slblank"></span>':c)+'</div><div class="csi">'+(parts>1?'Sheet '+part+' of '+parts+' &middot; ':'')+rl+'<br><b>Write each score in the box right next to that team\'s name.</b> The winning team initials the last box to confirm. Play matches in order, top to bottom.</div></div>';
+  h+='<table class="cstb"><tr><th>#</th><th>Time</th><th class="csa">Team 1</th><th>Score</th><th></th><th>Score</th><th class="csb">Team 2</th><th>Winner<br>initials</th></tr>';
   rows.forEach(function(g,i){h+=csRow(g,(part-1)*CSROWS+i);});
   return h+'</table><div class="csf">Bring this sheet and the basket back to the scorekeeper table after every match.</div></div>';
 }
