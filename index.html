@@ -248,6 +248,7 @@ html.tvmode #app{font-size:1.05vw}
 .tnin{width:100%;box-sizing:border-box;font-weight:700;margin:0 0 4px}.rtn{margin-right:4px}.rtn::after{content:" \00b7";font-weight:400;color:var(--muted)}.pdpl{opacity:.75;font-size:.9rem;margin-top:2px}
 .poact{width:100%;padding:12px;margin:4px 0 2px}.poact:disabled{opacity:.45}.sdl.prov{opacity:.75;font-size:.85rem}
 .dchips{display:flex;gap:6px;overflow-x:auto;margin:2px 0 12px;padding-bottom:2px;position:sticky;top:0;background:var(--bg);z-index:5;padding-top:6px}.dchip{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;white-space:nowrap}.dchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mypick{display:block;width:100%;text-align:left;padding:10px 12px;margin:0 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}.mypick span{display:block;font-size:.88rem}.mypick small{display:block;color:var(--muted);font-size:.78rem}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -1269,7 +1270,7 @@ function render(){NXC=null;FRC=null;
   document.getElementById("nav").innerHTML=tabs.map(function(t){return '<button data-t="'+t[0]+'"'+(t[0]===tab?' class="on"':'')+'>'+t[1]+'</button>';}).join('');
   document.getElementById("st").textContent=ST;
   var fa=document.activeElement,fk=null,fs=null;
-  if(fa&&fa.tagName==="INPUT"&&fa.type!=="checkbox"){var ds2=fa.dataset;["id|i","pn","tn","ph","tm","wlnew","srch","rsrch","cf","cr","dv"].some(function(k){var ks=k.split("|");if(ds2[ks[0]]===undefined)return false;fk='input'+ks.map(function(x){return '[data-'+x+'="'+String(ds2[x]).replace(/"/g,'\\"')+'"]';}).join('');return true;});try{fs=fa.selectionStart;}catch(e){}}
+  if(fa&&fa.tagName==="INPUT"&&fa.type!=="checkbox"){var ds2=fa.dataset;["id|i","pn","tn","mysrch","ph","tm","wlnew","srch","rsrch","cf","cr","dv"].some(function(k){var ks=k.split("|");if(ds2[ks[0]]===undefined)return false;fk='input'+ks.map(function(x){return '[data-'+x+'="'+String(ds2[x]).replace(/"/g,'\\"')+'"]';}).join('');return true;});try{fs=fa.selectionStart;}catch(e){}}
   document.getElementById("app").innerHTML=fns[tab]();
   if(fk){var nf=document.querySelector(fk);if(nf&&!nf.disabled){nf.focus();try{if(fs!=null)nf.setSelectionRange(fs,fs);}catch(e){}}}if(tab==="teams")filterTeams();if(tab==="roster")filterRoster();
   Array.prototype.forEach.call(document.querySelectorAll("select[data-f]"),function(x){x.value=F[x.dataset.f];});
@@ -1450,9 +1451,27 @@ function myStatus(me){
   var ord=pos===1?'Next':pos===2?'2nd':pos===3?'3rd':pos+'th';
   return '<div class="nxm wait"><div class="nxl">Your next match &middot; In queue</div><div class="nxc">Waiting for a court</div><div class="nxv">vs '+esc(nm(opp))+lab+'</div><div class="nxt">'+ord+' in line for <b>Court '+g.court+'</b>. We\'ll call you to the scorekeeper table as soon as your court is ready.</div></div>';
 }
+/* find your team by typing a player or team name */
+var MYQ="";
+function myMatches(q){
+  q=q.trim().toLowerCase();if(q.length<2)return [];
+  var out=[];Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(t){
+    if(!players(t).some(Boolean)&&!tnm(t))return;
+    var key=(tnm(t)+" "+players(t).join(" ")+" "+t).toLowerCase();if(key.indexOf(q)>=0)out.push(t);});});
+  return out.slice(0,8);
+}
+function myResults(){
+  var r=myMatches(MYQ);if(MYQ.trim().length<2)return '';
+  if(!r.length)return '<p class="sub">No team matches "'+esc(MYQ.trim())+'". Try a first or last name.</p>';
+  return r.map(function(t){var p=t.charAt(0);return '<button class="mypick" data-mypick="'+t+'"><b>'+esc(nm(t))+'</b>'+(tnm(t)&&plnames(t)?'<span>'+esc(plnames(t))+'</span>':'')+'<small>'+esc(DIVN[PDIV[p]])+', Pool '+p+'</small></button>';}).join('');
+}
+document.addEventListener("input",function(e){var t=e.target;if(t&&t.dataset&&t.dataset.mysrch!==undefined){MYQ=t.value;var el=document.getElementById("myres");if(el)el.innerHTML=myResults();}});
+document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-mypick]"):null;if(!t)return;
+  MY=t.dataset.mypick;MYQ="";lsSet("kc_my",MY);if(ALERT)pushOn();render();window.scrollTo(0,0);});
 function vMine(){
   var codes=[];Object.keys(POOLS).forEach(function(p){codes=codes.concat(POOLS[p]);});
-  var h='<div class="bar"><select data-my="1"><option value="">Choose your team</option>'+codes.map(function(c){return '<option value="'+c+'"'+(c===MY?' selected':'')+'>'+esc(nm(c))+(tnm(c)&&plnames(c)?' \u2013 '+esc(plnames(c)):'')+(nm(c)!==c?' ('+c+')':'')+'</option>';}).join('')+'</select></div>';
+  var h='<input type="search" class="srch" data-mysrch="1" value="'+esc(MYQ)+'" placeholder="'+(MY?'Not your team? Search by player or team name':'Search your name or team name')+'" aria-label="Find your team"><div id="myres">'+myResults()+'</div>';
+  h+='<div class="bar"><select data-my="1"><option value="">Choose your team</option>'+codes.map(function(c){return '<option value="'+c+'"'+(c===MY?' selected':'')+'>'+esc(nm(c))+(tnm(c)&&plnames(c)?' \u2013 '+esc(plnames(c)):'')+(nm(c)!==c?' ('+c+')':'')+'</option>';}).join('')+'</select></div>';
   if(!MY)return h+'<p class="sub">Pick your team to see when your match is ready, your court, your scores and your standing.</p>'+rulesBlock();
   if(codes.indexOf(MY)<0){MY="";lsSet("kc_my",null);return vMine();}
   var pool=MY.charAt(0),o=outlook(MY);
