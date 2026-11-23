@@ -247,6 +247,7 @@ html.tvmode #app{font-size:1.05vw}
 #lvst{display:inline-block;font-size:.75rem;font-weight:700;margin:-4px 0 6px}#lvst.ok{color:var(--accent)}#lvst.bad{color:#b45309}html.tvmode #lvst{position:fixed;right:1.2vw;bottom:.6vw;display:block;font-size:.9vw}
 .tnin{width:100%;box-sizing:border-box;font-weight:700;margin:0 0 4px}.rtn{margin-right:4px}.rtn::after{content:" \00b7";font-weight:400;color:var(--muted)}.pdpl{opacity:.75;font-size:.9rem;margin-top:2px}
 .poact{width:100%;padding:12px;margin:4px 0 2px}.poact:disabled{opacity:.45}.sdl.prov{opacity:.75;font-size:.85rem}
+.dchips{display:flex;gap:6px;overflow-x:auto;margin:2px 0 12px;padding-bottom:2px;position:sticky;top:0;background:var(--bg);z-index:5;padding-top:6px}.dchip{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;white-space:nowrap}.dchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -349,7 +350,7 @@ function build(){
 function CLS(di){return ["o","d","w","x"][di%4];}
 
 
-var S={s:{},n:{},c:{}},F={div:"",court:""},tab=lsGet("kc_tab")||"scores",armed=false,db=null,canEdit=!(window.claude&&window.claude.use),pn=0,ld={},dn=0,ds=0,dc=0,MY=lsGet("kc_my")||"",ST="Offline mode: saved in this browser only.",q={};
+var S={s:{},n:{},c:{}},F={div:lsGet("kc_div")||"",court:""},tab=lsGet("kc_tab")||"scores",armed=false,db=null,canEdit=!(window.claude&&window.claude.use),pn=0,ld={},dn=0,ds=0,dc=0,MY=lsGet("kc_my")||"",ST="Offline mode: saved in this browser only.",q={};
 try{var raw=localStorage.getItem("pbscore1");if(raw)S=JSON.parse(raw);}catch(e){}
 S.s=S.s||{};S.n=S.n||{};S.c=S.c||{};S.p=S.p||{};S.mv=S.mv||{};S.st=S.st||{};S.en=S.en||{};S.cp=S.cp||{};S.pl=S.pl||{};S.lv=S.lv||{};var TX=null,dp=0,dmv=0;
 function setCfg(v){CFG=JSON.parse(JSON.stringify(DEFCFG));if(v){Object.keys(v).forEach(function(k){if(k==="rules")Object.assign(CFG.rules,v.rules);else CFG[k]=v[k];});}build();}
@@ -529,9 +530,17 @@ function tbl(pool,adv){
   });
   return h+'</table>';
 }
+/* division filter chips, shared by Scores, Standings and Playoffs */
+function divOK(di){return !F.div||F.div===CFG.divs[di].name;}
+function divChips(){
+  if(CFG.divs.length<2)return '';
+  if(F.div&&DIVN.indexOf(F.div)<0)F.div="";
+  return '<div class="dchips">'+[""].concat(DIVN).map(function(n){return '<button class="dchip'+(F.div===n?' on':'')+'" data-dchip="'+esc(n)+'">'+(n?esc(n):'All divisions')+'</button>';}).join('')+'</div>';
+}
+document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-dchip]"):null;if(!t)return;F.div=t.dataset.dchip;lsSet("kc_div",F.div||null);render();window.scrollTo(0,0);});
 function vStand(){
-  var h='';
-  CFG.divs.forEach(function(d,di){
+  var h=divChips();
+  CFG.divs.forEach(function(d,di){if(!divOK(di))return;
     h+='<h2 class="dvh">'+esc(d.name)+'</h2>';
     d.pl.forEach(function(p){h+='<h3>Pool '+p+'</h3>'+tbl(p,d.adv);});
     if(poOn(di)||canEdit)h+='<h3>'+esc(d.name)+' playoff seeds'+(poOn(di)?'':' (provisional'+(canEdit?', only you can see this':'')+')')+'</h3><ol class="seeds">'+seeds(di).map(function(t){return '<li>'+esc(nm(t))+'</li>';}).join('')+'</ol>';
@@ -736,7 +745,7 @@ document.addEventListener("click",function(e){
 
 document.addEventListener("toggle",function(e){var t=e.target;if(t&&t.classList&&t.classList.contains("rulesd")){RULESOPEN=t.open;try{localStorage.setItem("pbrules",RULESOPEN?"1":"0");}catch(x){}}},true);
 function vPlay(){
-  var h=infBox("po");CFG.divs.forEach(function(d,di){h+=bracket(di);});
+  var h=divChips();CFG.divs.forEach(function(d,di){if(divOK(di))h+=bracket(di);});h+=infBox("po");
   var ov=COURTS.filter(function(c){return CEND[c]>CFG.close;});
   if(ov.length)h+='<p class="sub">If a playoff game can\'t start on its court by '+hhmm(CFG.close-15)+', play it on court '+ov.join(' or ')+', booked until '+hhmm(CFG.ovclose)+'.</p>';
   return h;
@@ -1265,6 +1274,7 @@ function render(){NXC=null;FRC=null;
   if(fk){var nf=document.querySelector(fk);if(nf&&!nf.disabled){nf.focus();try{if(fs!=null)nf.setSelectionRange(fs,fs);}catch(e){}}}if(tab==="teams")filterTeams();if(tab==="roster")filterRoster();
   Array.prototype.forEach.call(document.querySelectorAll("select[data-f]"),function(x){x.value=F[x.dataset.f];});
   try{fitBrackets();}catch(e){}
+  try{var dc0=document.querySelector('.dchip.on');if(dc0)dc0.parentNode.scrollLeft=Math.max(0,dc0.offsetLeft-dc0.parentNode.offsetLeft-16);}catch(e){}
   try{checkCall();}catch(e){}
   try{notifyCalls();}catch(e){}
 }
@@ -1495,7 +1505,7 @@ function wn(){
 }
 document.addEventListener("change",function(e){
   var t=e.target,d=t.dataset;
-  if(d.f){F[d.f]=t.value;}
+  if(d.f){F[d.f]=t.value;if(d.f==="div")lsSet("kc_div",t.value||null);}
   else if(d.my!==undefined){MY=t.value;lsSet("kc_my",MY||null);if(ALERT&&MY)pushOn();}
   else if(d.ph!==undefined){return;}
   else if(d.srch!==undefined||d.pn!==undefined||d.rsrch!==undefined||d.tn!==undefined){return;}
