@@ -249,6 +249,33 @@ html.tvmode #app{font-size:1.05vw}
 .poact{width:100%;padding:12px;margin:4px 0 2px}.poact:disabled{opacity:.45}.sdl.prov{opacity:.75;font-size:.85rem}
 .dchips{display:flex;gap:6px;overflow-x:auto;margin:2px 0 12px;padding-bottom:2px;position:sticky;top:0;background:var(--bg);z-index:5;padding-top:6px}.dchip{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;white-space:nowrap}.dchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mypick{display:block;width:100%;text-align:left;padding:10px 12px;margin:0 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}.mypick span{display:block;font-size:.88rem}.mypick small{display:block;color:var(--muted);font-size:.78rem}
+#printroot{display:none}
+.prbar{flex-wrap:wrap;gap:6px}.prbl{display:flex;align-items:center;gap:6px;font-size:.9rem}.prbl input{width:64px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+@media print{
+  @page{size:letter portrait;margin:0}
+  html.printing body>*:not(#printroot){display:none!important}
+  html.printing #printroot{display:block}
+  html.printing body{background:#fff!important;margin:0}
+}
+.slpage{width:8.5in;height:11in;position:relative;break-after:page;page-break-after:always;background:#fff;color:#111;font-family:Helvetica,Arial,sans-serif}
+.slip{width:8.5in;height:5.5in;box-sizing:border-box;padding:.32in .36in;display:grid;grid-template-columns:1fr 1fr;column-gap:.6in;position:relative;overflow:hidden}
+.slip.empty{visibility:hidden}
+.slfold{position:absolute;left:50%;top:.2in;bottom:.2in;border-left:1px dashed #9ca3af}.slfold span{position:absolute;top:-2px;left:-11px;background:#fff;font-size:7pt;color:#9ca3af}
+.slcut{position:absolute;left:0;right:0;top:5.5in;border-top:1px dashed #6b7280}.slcut span{position:absolute;left:.15in;top:-6pt;background:#fff;font-size:7pt;color:#6b7280;padding:0 3px}
+.sll{display:flex;flex-direction:column;gap:.07in;position:relative}
+.slc{font-size:30pt;font-weight:900;letter-spacing:.02em;line-height:1}
+.slm{font-size:10pt}.slr{font-size:9pt;color:#374151;margin-bottom:.04in}
+.slrow{display:flex;align-items:stretch;gap:.12in;border:1.5pt solid #111;border-radius:8px;padding:.08in .1in;min-height:.95in}
+.slt{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.sltl{font-size:7pt;font-weight:800;letter-spacing:.1em;color:#6b7280}.sltn{font-size:14pt;font-weight:800;line-height:1.15}.sltp{font-size:9pt;color:#374151}
+.sltline{border-bottom:1px solid #9ca3af;height:.3in}
+.slbox{width:.95in;border:2pt solid #111;border-radius:6px;position:relative;flex:none}.slbox span{position:absolute;top:3px;left:0;right:0;text-align:center;font-size:6.5pt;font-weight:800;letter-spacing:.1em;color:#6b7280}
+.slf{font-size:8pt;color:#374151;line-height:1.35;margin-top:auto}.slid{position:absolute;right:0;top:0;font-size:6.5pt;color:#9ca3af}
+.slblank{display:inline-block;border-bottom:1.2pt solid #111;width:.8in;height:.28in;vertical-align:bottom}.slblank.s{width:.9in;height:.18in}.slblank.l{width:1.4in;height:.18in}
+.slrt{display:flex;flex-direction:column;gap:.1in}.slph{font-size:10pt;font-weight:800}.slph span{font-weight:400;color:#6b7280;font-size:8pt}
+.sltk{border:1pt solid #d1d5db;border-radius:6px;padding:.06in .08in}.sltkn{font-size:9.5pt;font-weight:700;margin-bottom:.05in;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slcells{display:grid;grid-template-columns:repeat(9,1fr);gap:3px}.slcells i{font-style:normal;border:1pt solid #6b7280;height:.27in;font-size:7.5pt;color:#6b7280;display:flex;align-items:center;justify-content:center}
+.slto{font-size:8.5pt}.slnotes{flex:1;border:1pt solid #d1d5db;border-radius:6px;font-size:7.5pt;color:#9ca3af;padding:3px 6px;min-height:.5in}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -917,7 +944,7 @@ function vTeams(){
     });
     h+='</div></div>';
   });
-  h+=vWait()+vPlayerView()+vStats()+vFormat()+vInfo();
+  h+=vWait()+vPrint()+vPlayerView()+vStats()+vFormat()+vInfo();
   return h;
 }
 /* ---- waitlists, one per division ---- */
@@ -1451,6 +1478,66 @@ function myStatus(me){
   var ord=pos===1?'Next':pos===2?'2nd':pos===3?'3rd':pos+'th';
   return '<div class="nxm wait"><div class="nxl">Your next match &middot; In queue</div><div class="nxc">Waiting for a court</div><div class="nxv">vs '+esc(nm(opp))+lab+'</div><div class="nxt">'+ord+' in line for <b>Court '+g.court+'</b>. We\'ll call you to the scorekeeper table as soon as your court is ready.</div></div>';
 }
+/* ===== Printable score slips: one match per slip, 8.5 x 5.5 in (two per letter page), folds in half to 4.25 x 5.5 ===== */
+var PR={div:"",court:"",what:"pool",blank:0};
+function slipGames(){
+  var G=allGames(),out=[];
+  G.forEach(function(g){
+    if(PR.what==="none")return;if(PR.what==="pool"&&g.po)return;if(PR.what==="po"&&!g.po)return;
+    if(PR.div&&DIVN[g.di]!==PR.div)return;if(PR.court&&String(g.court)!==String(PR.court))return;
+    if(sc(g.id))return;
+    out.push(g);
+  });
+  return out.sort(function(x,y){return x.court-y.court||x.slot-y.slot;});
+}
+function slipRule(g){var t=g.po?poType(g.id):"rr",r=refRule(g);return {txt:String(CFG.rules[t]||""),to:r.to,cap:r.cap,sw:r.sw,tos:r.tos};}
+function slipTeam(t,ph,n){
+  var nmx=t?nm(t):(ph||"");
+  return '<div class="slt"><div class="sltl">TEAM '+n+'</div><div class="sltn">'+esc(nmx||" ")+'</div>'+(t&&tnm(t)&&plnames(t)?'<div class="sltp">'+esc(plnames(t))+'</div>':(t?'':'<div class="sltline"></div>'))+'</div>';
+}
+function slipHtml(g){
+  var blank=!g,rule=blank?null:slipRule(g),ph=["",""];
+  if(g&&g.po){var R=resolve(g.di).R[g.id]||{};ph=[R.pa||"",R.pb||""];}
+  var head=blank?'<div class="slc">COURT <span class="slblank"></span></div><div class="slm">Time <span class="slblank s"></span> &nbsp; Division <span class="slblank s"></span></div><div class="slm">Round <span class="slblank l"></span></div>'
+    :'<div class="slc">COURT '+g.court+'</div><div class="slm"><b>'+T[g.slot]+'</b> &middot; '+esc(g.po?g.lab:(function(){var m=String(g.id).match(/^([A-Z])r(\d+)/);return DIVN[g.di]+(m?', Pool '+m[1]+', Round '+(+m[2]+1):'');})())+'</div>';
+  var rl=blank?'Game to ____ &nbsp; win by 2 &nbsp; cap ____':esc('Game to '+rule.to+', win by 2'+(rule.cap?', cap '+rule.cap:''))+(rule.sw?' &middot; switch ends at '+rule.sw:'');
+  var L='<div class="sll">'+head+'<div class="slr">'+rl+'</div>';
+  [0,1].forEach(function(i){var t=blank?null:(i?g.b:g.a);
+    L+='<div class="slrow">'+slipTeam(t,ph[i],i+1)+'<div class="slbox"><span>SCORE</span></div></div>';});
+  L+='<div class="slf">Write your score in <b>your own team\'s</b> box. Winner circles their name.<br>Bring this sheet and the basket back to the scorekeeper table.</div>'+(g?'<div class="slid">'+esc(g.id)+'</div>':'')+'</div>';
+  var nmA=blank?'Team 1':(g.a?nm(g.a):ph[0]),nmB=blank?'Team 2':(g.b?nm(g.b):ph[1]);
+  var cells='';for(var k=1;k<=17;k++)cells+='<i>'+k+'</i>';
+  var Rt='<div class="slrt"><div class="slph">Point tracker <span>(cross off each point)</span></div>'+
+    '<div class="sltk"><div class="sltkn">'+esc(nmA)+'</div><div class="slcells">'+cells+'</div></div>'+
+    '<div class="sltk"><div class="sltkn">'+esc(nmB)+'</div><div class="slcells">'+cells+'</div></div>'+
+    (blank||rule.tos?'<div class="slto">Timeouts (playoffs, 1 each): Team 1 &#9634; &nbsp; Team 2 &#9634;</div>':'<div class="slto">No timeouts in round robin.</div>')+
+    '<div class="slnotes">Notes</div></div>';
+  return '<div class="slip"><div class="slfold"><span>fold</span></div>'+L+Rt+'</div>';
+}
+function printSlips(){
+  var list=slipGames().map(slipHtml);for(var b=0;b<(+PR.blank||0);b++)list.push(slipHtml(null));
+  if(!list.length){ST="No unplayed matches for that choice.";render();return;}
+  var h='';for(var i=0;i<list.length;i+=2)h+='<div class="slpage">'+list[i]+'<div class="slcut"><span>cut</span></div>'+(list[i+1]||'<div class="slip empty"></div>')+'</div>';
+  var root=document.getElementById("printroot");if(!root){root=document.createElement("div");root.id="printroot";document.body.appendChild(root);}
+  root.innerHTML=h;document.documentElement.classList.add("printing");
+  setTimeout(function(){window.print();},150);
+}
+window.addEventListener("afterprint",function(){document.documentElement.classList.remove("printing");var r=document.getElementById("printroot");if(r)r.innerHTML="";});
+function vPrint(){
+  var n=slipGames().length+(+PR.blank||0);
+  var h='<h2 class="dvh">Print score slips</h2><p class="sub">One match per slip, sorted by court then time, so each court\'s stack goes straight into its basket. Each slip is 8.5 &times; 5.5 in (two per letter page): cut on the middle line, then fold in half to 4.25 &times; 5.5 in. Already-scored matches are skipped.</p>';
+  h+='<div class="bar prbar"><select data-pr="what"><option value="pool"'+(PR.what==="pool"?' selected':'')+'>Pool matches</option><option value="po"'+(PR.what==="po"?' selected':'')+'>Playoff matches</option><option value="all"'+(PR.what==="all"?' selected':'')+'>All matches</option><option value="none"'+(PR.what==="none"?' selected':'')+'>Only blank slips</option></select>';
+  h+='<select data-pr="div"><option value="">All divisions</option>'+DIVN.map(function(n2){return '<option'+(PR.div===n2?' selected':'')+'>'+esc(n2)+'</option>';}).join('')+'</select>';
+  h+='<select data-pr="court"><option value="">All courts</option>'+COURTS.map(function(c){return '<option value="'+c+'"'+(String(PR.court)===String(c)?' selected':'')+'>Court '+c+'</option>';}).join('')+'</select>';
+  h+='<label class="prbl">Blank slips <input type="number" min="0" max="40" data-pr="blank" value="'+(+PR.blank||0)+'"></label></div>';
+  h+='<button class="sb" data-prgo="1"'+(n?'':' disabled')+'>Print '+n+' slip'+(n===1?'':'s')+' ('+Math.ceil(n/2)+' page'+(Math.ceil(n/2)===1?'':'s')+')</button>';
+  h+='<p class="sub">Print at 100% (actual size) on letter paper. Playoff slips show the bracket spots until playoffs are activated; print them after activation to get team names.</p>';
+  return h;
+}
+document.addEventListener("change",function(e){var t=e.target;if(!t||!t.dataset||t.dataset.pr===undefined)return;var k=t.dataset.pr;
+  if(k==="what"&&t.value==="none"){PR.what="none";}else PR[k]=k==="blank"?Math.max(0,Math.min(40,+t.value||0)):t.value;render();});
+document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-prgo]"):null;if(t&&canEdit)printSlips();});
+
 /* find your team by typing a player or team name */
 var MYQ="";
 function myMatches(q){
