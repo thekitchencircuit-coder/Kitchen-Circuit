@@ -246,6 +246,7 @@ html.tvmode #app{font-size:1.05vw}
 .tvpod .pod{font-size:1.1em}.tvpod .pdc{background:#0f1c15;border:1px solid #24382c}
 #lvst{display:inline-block;font-size:.75rem;font-weight:700;margin:-4px 0 6px}#lvst.ok{color:var(--accent)}#lvst.bad{color:#b45309}html.tvmode #lvst{position:fixed;right:1.2vw;bottom:.6vw;display:block;font-size:.9vw}
 .tnin{width:100%;box-sizing:border-box;font-weight:700;margin:0 0 4px}.rtn{margin-right:4px}.rtn::after{content:" \00b7";font-weight:400;color:var(--muted)}.pdpl{opacity:.75;font-size:.9rem;margin-top:2px}
+.poact{width:100%;padding:12px;margin:4px 0 2px}.poact:disabled{opacity:.45}.sdl.prov{opacity:.75;font-size:.85rem}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -386,6 +387,10 @@ function seeds(di){
   return l.sort(cmp).map(function(x){return x.t;});
 }
 function done(di){return M.filter(function(m){return m.di===di;}).every(function(m){return sc(m.id);});}
+/* playoffs show real teams only after the scorekeeper activates them (pool play must be complete) */
+function poOn(di){return !!((S.pa||{})[di])&&done(di);}
+function poLeft(di){return M.filter(function(m){return m.di===di&&!sc(m.id);}).length;}
+function wpa(){if(!db){save();return;}var v=Object.assign({},S.pa||{});queueSave("pa",function(){return db.doc("meta/playoffs").set({a:v});},function(){WT.pa=Date.now();});}
 
 function inp(id,i,v,en){return '<input type="number" inputmode="numeric" min="0" data-id="'+id+'" data-i="'+i+'" value="'+(v==null?"":v)+'"'+(en?"":" disabled")+'>';}
 var SDM=null;
@@ -529,7 +534,7 @@ function vStand(){
   CFG.divs.forEach(function(d,di){
     h+='<h2 class="dvh">'+esc(d.name)+'</h2>';
     d.pl.forEach(function(p){h+='<h3>Pool '+p+'</h3>'+tbl(p,d.adv);});
-    h+='<h3>'+esc(d.name)+' playoff seeds'+(done(di)?'':' (provisional)')+'</h3><ol class="seeds">'+seeds(di).map(function(t){return '<li>'+esc(nm(t))+'</li>';}).join('')+'</ol>';
+    if(poOn(di)||canEdit)h+='<h3>'+esc(d.name)+' playoff seeds'+(poOn(di)?'':' (provisional'+(canEdit?', only you can see this':'')+')')+'</h3><ol class="seeds">'+seeds(di).map(function(t){return '<li>'+esc(nm(t))+'</li>';}).join('')+'</ol>';
   });
   h+='<p class="sub">Ranked by wins, then point differential, then points scored. Shaded rows advance. See the Playoffs tab for the format.</p>';
   return h;
@@ -541,8 +546,8 @@ function series(a,b,ids){
   return[wa,wb];
 }
 function resolve(di){
-  var o=seeds(di),en=done(di),R={};
-  function val(sx){if(sx.seed)return o[sx.seed-1]||null;var id="P"+di+(sx.win||sx.lose),x=sc(id),r=R[id];if(!x||!r||!r.a||!r.b)return null;var w=x[0]>x[1]?r.a:r.b;return sx.win?w:(w===r.a?r.b:r.a);}
+  var o=seeds(di),en=poOn(di),R={};
+  function val(sx){if(sx.seed)return en?(o[sx.seed-1]||null):null;var id="P"+di+(sx.win||sx.lose),x=sc(id),r=R[id];if(!x||!r||!r.a||!r.b)return null;var w=x[0]>x[1]?r.a:r.b;return sx.win?w:(w===r.a?r.b:r.a);}
   PO.forEach(function(p){if(p.di===di)R[p.id]={a:val(p.src[0]),b:val(p.src[1]),pa:phName(p.src[0]),pb:phName(p.src[1])};});
   return {o:o,en:en,R:R};
 }
@@ -551,6 +556,10 @@ function goldNeeded(di,R,g){
   var r=R["P"+di+"g1"]||{},ids=[];for(var k=1;k<g;k++)ids.push("P"+di+"g"+k);
   var sr=series(r.a,r.b,ids);return sr[0]<need&&sr[1]<need;
 }
+document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-poact],[data-podeact]"):null;if(!t||!canEdit)return;
+  var di=t.dataset.poact||t.dataset.podeact;S.pa=Object.assign({},S.pa||{});
+  if(t.dataset.poact){if(!done(+di))return;S.pa[di]=true;ST=CFG.divs[+di].name+" playoffs activated.";}else{delete S.pa[di];ST="Playoffs back to seeds only.";}
+  FRC=null;NXC=null;wpa();render();});
 /* ===== Visual bracket and podium ===== */
 var VBFIT=true,VBENT=lsGet('kc_vbent')!=='0';
 document.addEventListener('toggle',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('vbent')){VBENT=e.target.open;lsSet('kc_vbent',VBENT?'1':'0');}},true);
@@ -614,9 +623,16 @@ document.addEventListener("click",function(e){var t=e.target.closest?e.target.cl
 
 function bracket(di){
   var d=CFG.divs[di],X=resolve(di),o=X.o,en=X.en,R=X.R,h='<h3>'+esc(d.name)+' playoffs</h3>'+podiumHtml(di);
-  if(!en)h+='<p class="sub">Unlocks when every '+esc(d.name)+' pool match has a score. Matchups below use provisional seeds.</p>';
+  var left=poLeft(di);
+  if(!en){
+    h+='<p class="sub">'+(left?'Pool play in progress: '+left+' match'+(left>1?'es':'')+' left. ':'Pool play is complete. ')+'Teams appear in the bracket once playoffs are activated.</p>';
+    if(canEdit)h+=left?'<button class="sb poact" disabled>Activate '+esc(d.name)+' playoffs</button><p class="sub">Available once every '+esc(d.name)+' pool match has a score.</p>'
+      :'<button class="sb poact" data-poact="'+di+'">Activate '+esc(d.name)+' playoffs</button><p class="sub">Puts the seeded teams into the bracket, shows it to players and starts calling playoff matches.</p>';
+  }
   SDM={};o.forEach(function(t,i){SDM[t]=i+1;});
-  h+='<div class="sdl">'+(en?'Seeds: ':'Provisional seeds: ')+o.map(function(t,i){return '<b>'+(i+1)+'</b> '+esc(nm(t));}).join(' &middot; ')+'</div>';
+  if(en)h+='<div class="sdl">Seeds: '+o.map(function(t,i){return '<b>'+(i+1)+'</b> '+esc(nm(t));}).join(' &middot; ')+'</div>';
+  else if(canEdit&&o.length)h+='<div class="sdl prov">Provisional seeds (only you can see this): '+o.map(function(t,i){return '<b>'+(i+1)+'</b> '+esc(nm(t));}).join(' &middot; ')+'</div>';
+  if(en&&canEdit&&!PO.some(function(p){return p.di===di&&(sc(p.id)||started(p.id));}))h+='<div class="vbbar" style="justify-content:flex-start"><button class="cp" data-podeact="'+di+'">Undo activation</button></div>';
   h+=visBracket(di);
   if(!canEdit){var g0=R["P"+di+"g1"];SDM=null;return h;}
   h+='<details class="vbent"'+(VBENT?' open':'')+'><summary>Enter playoff scores</summary>';
@@ -812,7 +828,7 @@ function remapTeams(link,oldPl,oldSz){
 }
 function clearAll(){
   var ids=Object.keys(S.s);S.s={};S.st={};S.en={};S.mv={};S.c={};S.cp={};
-  var rids=Object.keys(RF());S.rf={};REFID=null;REFSETUP=null;REFSAVED=null;
+  var rids=Object.keys(RF());S.rf={};REFID=null;REFSETUP=null;REFSAVED=null;if(S.pa&&Object.keys(S.pa).length){S.pa={};wpa();}
   if(db){ids.forEach(function(id){queueSave(id,function(){return db.collection("scores").doc(id).delete();},function(){SW[id]={v:["",""],t:Date.now()};});});
     rids.forEach(function(id){queueSave("rf"+id,function(){return db.collection("ref").doc(id).delete();},function(){WT.rf=Date.now();});});wst();wen();wmv();wc();}
   else save();
@@ -1188,7 +1204,7 @@ function tvPanels(G){
     P.push(h+'</div>');
     if(podium(di))P.unshift('<div class="tvpod">'+podiumHtml(di)+'</div>');
     var po=G.filter(function(g){return g.po&&g.di===di;});
-    if(done(di)||po.some(function(g){return sc(g.id)||started(g.id);})){
+    if(poOn(di)){
       var b='<div class="tvph">'+esc(d.name)+' &middot; Playoffs</div><div class="tvbr">';
       po.forEach(function(g){var x=sc(g.id),L=refLive(g.id);
         b+='<div class="tvbg'+(started(g.id)?' live':'')+'"><div class="tvbl">'+esc(g.lab)+' &middot; Ct '+g.court+'</div>'+
@@ -1259,7 +1275,8 @@ function outlook(me){
   var pool=me.charAt(0),di=PDIV[pool],d=CFG.divs[di],adv=d.adv,l=stand(pool),pm=M.filter(function(m){return m.pool===pool;});
   var left={};l.forEach(function(x){left[x.t]=pm.filter(function(m){return (m.a===x.t||m.b===x.t)&&!sc(m.id);}).length;});
   var mine=l.filter(function(x){return x.t===me;})[0],rank=l.indexOf(mine)+1;
-  if(done(di)){var sd=seeds(di),sn=sd.indexOf(me);
+  if(done(di)&&!poOn(di))return {cls:"mid",t:"Pool play is over. Playoff seeds are announced when the playoffs start."};
+  if(poOn(di)){var sd=seeds(di),sn=sd.indexOf(me);
     return sn>=0?{cls:"in",t:"Through to the playoffs as Seed "+(sn+1)+(sn<2&&d.n===6?" (bye to the semifinals)":"")+"."}:{cls:"out",t:"Pool play is over. You finished "+rank+" in Pool "+pool+" and did not make the playoffs."};}
   var others=l.filter(function(x){return x.t!==me;});
   if(!pm.some(function(m){return sc(m.id);}))return {cls:"mid",t:"Pool play hasn't started. Top "+adv+" in Pool "+pool+" advance to the playoffs."};
@@ -1289,7 +1306,7 @@ function dayList(me){
     h+='<div class="dr '+cls+'"><span class="dt">'+(g.po?esc(phLabel(g)):'Ct '+g.court)+'<small>'+(g.po?'Ct '+g.court:T[g.slot].replace(" PM",""))+'</small></span><span class="dm">vs '+esc(nm(opp))+'</span><span class="ds">'+st+'</span></div>';
   });
   var di=PDIV[pool];
-  if(!mine.some(function(g){return g.po;}))h+='<div class="dr"><span class="dt">Playoffs</span><span class="dm">'+(done(di)&&seeds(di).indexOf(me)<0?'Not this time':'If you advance, your games appear here')+'</span><span class="ds"></span></div>';
+  if(!mine.some(function(g){return g.po;}))h+='<div class="dr"><span class="dt">Playoffs</span><span class="dm">'+(poOn(di)&&seeds(di).indexOf(me)<0?'Not this time':'If you advance, your games appear here')+'</span><span class="ds"></span></div>';
   return h+'</div>';
 }
 function phLabel(g){var t=poType(g.id);return t==="qf"?"Quarterfinal":t==="sf"?"Semifinal":t==="br"?"Bronze":"Gold"+(CFG.goldBo>1?" G"+goldNum(g.id):"");}
@@ -1451,7 +1468,7 @@ function tryApply(){
     S.s=x;delete SNAP.s;ch=true;}
   if(SNAP.f){if(!(WT.f>SNAP.f.t)){setCfg(SNAP.f.v);DRAFT=null;}delete SNAP.f;ch=true;}
   if(SNAP.rf&&PEND===0){if(!(WT.rf>SNAP.rf.t))S.rf=SNAP.rf.v;delete SNAP.rf;ch=true;}
-  ["n","c","p","mv","st","en","cp","pl","tn","lv","wl","inf"].forEach(function(k){if(SNAP[k]){if(!(WT[k]>SNAP[k].t)){S[k]=SNAP[k].v;if(k==="n")S.nb=SNAP[k].nb;}delete SNAP[k];ch=true;}});
+  ["n","c","p","mv","st","en","cp","pl","tn","lv","wl","inf","pa"].forEach(function(k){if(SNAP[k]){if(!(WT[k]>SNAP[k].t)){S[k]=SNAP[k].v;if(k==="n")S.nb=SNAP[k].nb;}delete SNAP[k];ch=true;}});
   if(ch)render();
 }
 function queueSave(key,fn,done){
@@ -1525,16 +1542,17 @@ function typing(){var a=document.activeElement;return !!(a&&(a.tagName==="INPUT"
 function refresh(){if(typing())return;render();}
 function initDb(){
   if(!(window.claude&&claude.use))return;
-  S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{},inf:{}};setCfg(null);ST="Connecting to live scores...";
+  S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{},inf:{},pa:{}};setCfg(null);ST="Connecting to live scores...";
   claude.use("db").then(function(d){
     if(!d){ST="Sign in to Claude to see live scores.";render();return;}
-    db=d;S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{},inf:{}};canEdit=false;ST="Connecting to live scores...";render();
+    db=d;S={s:{},n:{},c:{},p:{},mv:{},st:{},en:{},cp:{},pl:{},lv:{},rf:{},wl:{},inf:{},pa:{}};canEdit=false;ST="Connecting to live scores...";render();
     var tm=setTimeout(function(){ST="Cannot reach live scores yet. What you see may be out of date.";render();},10000);
     function ok(){clearTimeout(tm);ST=canEdit?"Scorekeeper mode. Scores save live.":isRefUser()?"Referee mode. Pick your match on the Referee tab.":"Live view. Updates automatically.";}
     db.collection("scores").onSnapshot(function(snap){ld.s=1;var x={};snap.docs.forEach(function(y){var v=y.data();if(v)x[y.id]=[v.a,v.b];});SNAP.s={v:x,t:Date.now()};ok();tryApply();},function(){ST="Live scores are unavailable right now.";render();});
     db.doc("meta/names").onSnapshot(function(y){ld.n=1;var v=y.exists?y.data():null;var tn=Date.now();SNAP.n={v:Object.assign({},(v&&v.n)||{}),nb:!!(v&&v.blank),t:tn};SNAP.pl={v:JSON.parse(JSON.stringify((v&&v.pl)||{})),t:tn};SNAP.tn={v:Object.assign({},(v&&v.tn)||{}),t:tn};ok();tryApply();},function(){});
     db.doc("meta/checkin").onSnapshot(function(y){ld.c=1;var v=y.exists?y.data():null;var tc=Date.now();SNAP.c={v:Object.assign({},(v&&v.c)||{}),t:tc};SNAP.cp={v:JSON.parse(JSON.stringify((v&&v.p)||{})),t:tc};tryApply();},function(){});
     db.doc("meta/format").onSnapshot(function(y){var v=y.exists?y.data():null,c=null;try{c=v&&v.j?JSON.parse(v.j):null;}catch(e){}SNAP.f={v:c,t:Date.now()};tryApply();},function(){});
+    db.doc("meta/playoffs").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.pa={v:(v&&v.a)||{},t:Date.now()};tryApply();},function(){});
     db.doc("meta/info").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.inf={v:(v&&v.i)||{},t:Date.now()};tryApply();},function(){});
     db.doc("meta/waitlist").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.wl={v:(v&&v.w)||{},t:Date.now()};tryApply();},function(){});
     db.doc("meta/live").onSnapshot(function(y){var v=y.exists?y.data():null;SNAP.lv={v:{open:!!(v&&v.open)},t:Date.now()};tryApply();},function(){});
