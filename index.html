@@ -294,6 +294,16 @@ html.tvmode #app{font-size:1.05vw}
 .csline{display:inline-block;width:90%;border-bottom:1pt solid #9ca3af;height:.25in}.csline.s{width:.6in}
 .csf{font-size:7.5pt;color:#374151;margin-top:auto}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
+/* DUPR tab */
+.du-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}.du-g label{display:flex;flex-direction:column;font-size:.75rem;color:var(--muted);gap:2px}
+.du-g input,.du-t input{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-width:0}
+.du-t{width:100%;border-collapse:collapse}.du-t td{padding:5px 4px;border-bottom:1px solid var(--line);font-size:.85rem;vertical-align:middle}
+.du-t input{width:92px;text-transform:uppercase;letter-spacing:.04em}.du-t input.bad{border-color:#b3261e}
+.du-m{display:flex;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:5px;font-size:.84rem}
+.du-m .du-x{flex:1;min-width:0}.du-m .du-x div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.du-m small{color:var(--muted)}
+.du-b{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;background:var(--line);color:var(--ink)}
+.du-b.ok{background:#1f6b45;color:#fff}.du-b.er{background:#b3261e;color:#fff}.du-b.ch{background:#d9b84a;color:#14211b}
+.du-m .cp{padding:5px 9px;font-size:.75rem}.du-warn{border-left:4px solid #d9b84a}
 </style>
 </head>
 <body>
@@ -1304,17 +1314,17 @@ if(TV){document.documentElement.classList.add("tvmode");setInterval(function(){i
 
 function render(){NXC=null;FRC=null;
   if(TV){document.getElementById("app").innerHTML=vTV();return;}
-  var fns={ref:vRef,roster:vRoster,scores:vScores,standings:vStand,playoffs:vPlay,mine:vMine,teams:vTeams,texts:vTexts};
+  var fns={ref:vRef,roster:vRoster,scores:vScores,standings:vStand,playoffs:vPlay,mine:vMine,teams:vTeams,texts:vTexts,dupr:vDupr};
   var tabs=[["roster","Roster"]];
   if(canEdit||isRefUser()||isOpen())tabs=tabs.concat([["scores","Scores"],["standings","Standings"],["playoffs","Playoffs"],["mine","My team"]]);
   if(canRef())tabs.push(["ref","Referee"]);
-  if(canEdit){tabs.push(["teams","Teams"]);tabs.push(["texts","Texts"]);}
+  if(canEdit){tabs.push(["teams","Teams"]);tabs.push(["texts","Texts"]);tabs.push(["dupr","DUPR"]);}
   if(!window.__tabDone){var want=lsGet("kc_tab");if(!want||tabs.some(function(x){return x[0]===want;})){if(want)tab=want;if(M.length&&(isOpen()||canEdit||!want||want==="roster"))window.__tabDone=1;}}
   if(!tabs.some(function(x){return x[0]===tab;}))tab=isOpen()||canEdit?"standings":"roster";
   document.getElementById("nav").innerHTML=tabs.map(function(t){return '<button data-t="'+t[0]+'"'+(t[0]===tab?' class="on"':'')+'>'+t[1]+'</button>';}).join('');
   document.getElementById("st").textContent=ST;
   var fa=document.activeElement,fk=null,fs=null;
-  if(fa&&fa.tagName==="INPUT"&&fa.type!=="checkbox"){var ds2=fa.dataset;["id|i","pn","tn","mysrch","ph","tm","wlnew","srch","rsrch","cf","cr","dv"].some(function(k){var ks=k.split("|");if(ds2[ks[0]]===undefined)return false;fk='input'+ks.map(function(x){return '[data-'+x+'="'+String(ds2[x]).replace(/"/g,'\\"')+'"]';}).join('');return true;});try{fs=fa.selectionStart;}catch(e){}}
+  if(fa&&fa.tagName==="INPUT"&&fa.type!=="checkbox"){var ds2=fa.dataset;["id|i","pn","tn","mysrch","ph","tm","wlnew","srch","rsrch","cf","cr","dv","du","dus"].some(function(k){var ks=k.split("|");if(ds2[ks[0]]===undefined)return false;fk='input'+ks.map(function(x){return '[data-'+x+'="'+String(ds2[x]).replace(/"/g,'\\"')+'"]';}).join('');return true;});try{fs=fa.selectionStart;}catch(e){}}
   document.getElementById("app").innerHTML=fns[tab]();
   if(fk){var nf=document.querySelector(fk);if(nf&&!nf.disabled){nf.focus();try{if(fs!=null)nf.setSelectionRange(fs,fs);}catch(e){}}}if(tab==="teams")filterTeams();if(tab==="roster")filterRoster();
   Array.prototype.forEach.call(document.querySelectorAll("select[data-f]"),function(x){x.value=F[x.dataset.f];});
@@ -1719,13 +1729,149 @@ function initDb(){
     db.doc("meta/started").onSnapshot(function(y){ld.t=1;var v=y.exists?y.data():null;SNAP.st={v:Object.assign({},(v&&v.g)||{}),t:Date.now()};tryApply();},function(){});
     db.doc("meta/moves").onSnapshot(function(y){ld.m=1;var v=y.exists?y.data():null;SNAP.mv={v:Object.assign({},(v&&v.m)||{}),t:Date.now()};tryApply();},function(){});
     db.collection("ref").onSnapshot(function(snap){var x={};snap.docs.forEach(function(y){var v=y.data();if(v)x[y.id]=v;});SNAP.rf={v:x,t:Date.now()};tryApply();},function(){});
-    db.doc("private/phones").onSnapshot(function(y){ld.p=1;var v=y.exists?y.data():null;SNAP.p={v:Object.assign({},(v&&v.p)||{}),t:Date.now()};tryApply();},function(){});
+    duprInit();db.doc("private/phones").onSnapshot(function(y){ld.p=1;var v=y.exists?y.data():null;SNAP.p={v:Object.assign({},(v&&v.p)||{}),t:Date.now()};tryApply();},function(){});
     return claude.use("user").then(function(u){
       if(!u||!u.canEdit)return false;
       return Promise.resolve(u.canEdit()).then(function(ce){if(ce===true||ce===false)return ce;return Promise.resolve(u.isOwner?u.isOwner():false).then(function(o){return o===true;});});
     }).then(function(ce){canEdit=ce===true;if(!canEdit&&tab==="scores")tab="standings";ok();render();}).catch(function(){canEdit=false;ok();render();});
   }).catch(function(){ST="Live scores are unavailable right now.";render();});
 }
+/* ===== DUPR uploads (scorekeeper only) =====
+   Settings and players' DUPR IDs live in private/dupr; what has been sent lives in the dupr_matches table.
+   The dupr Edge Function holds the DUPR keys and does the actual sending. */
+var DU={ev:"",loc:"",date:"",club:"",ids:{}},DUST={},DUENV="",DUMSG="",DUBUSY=false,DUSNAP=0,DUWT=0;
+function duToday(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+function duDate(){return DU.date||duToday();}
+function duprInit(){
+  if(!db)return;
+  db.doc("private/dupr").onSnapshot(function(y){
+    if(Date.now()-DUWT<3000)return; /* our own save is still landing */
+    var v=y.exists?y.data():null;DU={ev:(v&&v.ev)||"",loc:(v&&v.loc)||"",date:(v&&v.date)||"",club:(v&&v.club)||"",ids:JSON.parse(JSON.stringify((v&&v.ids)||{}))};DUSNAP=1;refresh();
+  },function(){});
+  duLoad();
+}
+function duSave(){
+  if(!db)return;DUWT=Date.now();var v=JSON.parse(JSON.stringify(DU));
+  queueSave("dupr",function(){return db.doc("private/dupr").set(v);},function(){DUWT=Date.now();});
+}
+function duLoad(){
+  if(!window.KC_SB||!canEdit&&!(window.KC_ROLE&&window.KC_ROLE.editor))return Promise.resolve();
+  return window.KC_SB.from("dupr_matches").select("identifier,env,match_code,payload,status,error,updated_at").then(function(r){
+    if(r.error){if(/dupr_matches/.test(r.error.message||""))DUMSG="Setup needed: run supabase/sql/dupr-setup.sql in Supabase.";return;}
+    var x={};(r.data||[]).forEach(function(row){x[row.identifier]=row;});DUST=x;refresh();
+  });
+}
+function duCall(body){
+  if(!window.KC_SB)return Promise.reject(new Error("DUPR uploads work on the live site only."));
+  return window.KC_SB.auth.getSession().then(function(r){
+    var tok=r&&r.data&&r.data.session&&r.data.session.access_token;if(!tok)throw new Error("Sign in as scorekeeper first.");
+    return fetch(window.KC_SBURL+"/functions/v1/dupr",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok,"apikey":window.KC_SBKEY},body:JSON.stringify(body)});
+  }).then(function(res){return res.text().then(function(t){var j;try{j=JSON.parse(t);}catch(e){j={error:t.slice(0,300)||("HTTP "+res.status)};}
+    if(res.status===404)j={error:"The dupr Edge Function isn't deployed yet."};
+    if(!res.ok&&!j.error)j.error="HTTP "+res.status;return j;});});
+}
+/* stable text form of a payload (the database may reorder keys) */
+function duCanon(o){if(o===null||typeof o!=="object")return JSON.stringify(o);if(Array.isArray(o))return "["+o.map(duCanon).join(",")+"]";return "{"+Object.keys(o).sort().map(function(k){return JSON.stringify(k)+":"+duCanon(o[k]);}).join(",")+"}";}
+function duId(v){return String(v||"").trim().toUpperCase().replace(/\s+/g,"");}
+function duOk(v){return /^[A-Z0-9]{4,12}$/.test(v);}
+function duIds(t){var p=DU.ids[t]||[];return [duId(p[0]),duId(p[1])];}
+
+/* Every finished match, built into exactly what DUPR receives. Gold series go up as one match with up to 3 games. */
+function duMatches(){
+  var out=[],date=duDate(),pre="kc-"+date+"-";
+  function team(code,games,side){var ids=duIds(code),o={player1:ids[0],player2:ids[1]};games.forEach(function(g,i){o["game"+(i+1)]=g[side];});return o;}
+  function add(key,label,a,b,games,bracket){
+    var m={identifier:pre+key,location:DU.loc||"",matchDate:date,format:"DOUBLES",matchType:"SIDEOUT",event:DU.ev||"Kitchen Circuit",bracket:bracket,
+      teamA:team(a,games,0),teamB:team(b,games,1)};
+    if(DU.club){m.clubId=Number(DU.club)||DU.club;m.matchSource="CLUB";}
+    var all=[m.teamA.player1,m.teamA.player2,m.teamB.player1,m.teamB.player2],miss=all.filter(function(x){return !duOk(x);}).length;
+    var dup=all.filter(duOk).some(function(x,i,l){return l.indexOf(x)!==i;});
+    out.push({key:key,label:label,a:a,b:b,games:games,m:m,problem:miss?(miss+" DUPR ID"+(miss>1?"s":"")+" missing"):dup?"Same player twice":""});
+  }
+  M.forEach(function(g){var x=sc(g.id);if(x)add(g.id,"Pool "+g.pool,g.a,g.b,[x],g.div+" - Pool "+g.pool);});
+  CFG.divs.forEach(function(d,di){
+    var rs=resolve(di),R=rs.R,gold=[];
+    PO.forEach(function(p){if(p.di!==di)return;var r=R[p.id]||{};if(!r.a||!r.b)return;
+      if(p.t==="gold"){gold.push(p);return;}
+      var x=sc(p.id);if(x)add(p.id,poName(p,true),r.a,r.b,[x],d.name+" - "+poName(p));});
+    if(!gold.length)return;
+    var r1=R[gold[0].id]||{},need=Math.ceil(CFG.goldBo/2),wa=0,wb=0,games=[];
+    gold.forEach(function(p){var x=sc(p.id);if(!x||wa>=need||wb>=need)return;games.push(x);if(x[0]>x[1])wa++;else wb++;});
+    if(wa>=need||wb>=need)add("P"+di+"gold","Gold",r1.a,r1.b,games,d.name+" - Gold");
+  });
+  return out;
+}
+function duState(x){
+  var s=DUST[x.m.identifier];
+  if(!s)return x.problem?{c:"",t:x.problem}:{c:"",t:"Ready"};
+  if(s.status==="error"&&!s.match_code)return {c:"er",t:"Error",err:s.error};
+  if(s.payload&&duCanon(s.payload)!==duCanon(x.m))return {c:"ch",t:"Changed since upload",err:s.error};
+  return {c:"ok",t:"On DUPR"+(s.env==="uat"?" (test)":""),err:s.error};
+}
+function vDupr(){
+  if(!canEdit)return '<p class="sub">Scorekeepers only.</p>';
+  var L=duMatches(),ready=L.filter(function(x){return !x.problem&&!DUST[x.m.identifier];}).length+L.filter(function(x){var s=DUST[x.m.identifier];return s&&s.status==="error"&&!s.match_code&&!x.problem;}).length;
+  var on=L.filter(function(x){return duState(x).c==="ok";}).length,ch=L.filter(function(x){return duState(x).c==="ch";}).length;
+  var h='<h2 class="dvh">DUPR</h2>';
+  h+='<div class="fbox du-warn"><p class="sub" style="margin:0"><b>Test setup.</b> DUPR IDs are typed in here so you can test with DUPR\'s test players. Before DUPR approves you for live ratings, players must link their own DUPR account through a DUPR sign-in; DUPR does not allow typed-in IDs for live events.</p></div>';
+  h+='<h3>Connection</h3><div class="txb"><button class="cp" data-dua="ping"'+(DUBUSY?' disabled':'')+'>Test DUPR connection</button>'+(DUENV?'<span class="du-b ok">Connected: '+(DUENV==="prod"?"LIVE DUPR":"DUPR test (UAT)")+'</span>':'')+'</div>';
+  if(DUMSG)h+='<p class="sub" style="color:#b3261e">'+esc(DUMSG)+'</p>';
+  h+='<h3>Event details sent with every match</h3><div class="du-g">';
+  [["ev","Event name","Kitchen Circuit Moneyball"],["loc","Location","City, Province"],["date","Match date",duToday()],["club","DUPR club ID (optional)","Leave blank if not a club event"]].forEach(function(f){
+    h+='<label>'+f[1]+'<input '+(f[0]==="date"?'type="date"':'type="text"')+' data-dus="'+f[0]+'" value="'+esc(DU[f[0]]||(f[0]==="date"?duToday():""))+'" placeholder="'+esc(f[2])+'"></label>';});
+  h+='</div>';
+  /* matches */
+  h+='<h3>Finished matches</h3><p class="sub">'+L.length+' finished &middot; '+on+' on DUPR'+(ch?' &middot; <b>'+ch+' changed since upload</b>':'')+' &middot; '+ready+' ready to send</p>';
+  h+='<div class="txb"><button class="sb" data-dua="upall"'+(DUBUSY||!ready?' disabled':'')+'>'+(DUBUSY?'Working...':'Send '+ready+' ready match'+(ready===1?'':'es')+' to DUPR')+'</button>'+(ch?'<button class="cp" data-dua="updall"'+(DUBUSY?' disabled':'')+'>Update '+ch+' changed</button>':'')+'<button class="cp" data-dua="reload">Refresh</button></div>';
+  if(!L.length)h+='<p class="sub">Matches show here as scores are entered.</p>';
+  L.forEach(function(x){var st=duState(x),s=DUST[x.m.identifier];
+    h+='<div class="du-m"><div class="du-x"><div><b>'+esc(x.label)+'</b> &middot; '+esc(nm(x.a))+' vs '+esc(nm(x.b))+'</div><small>'+x.games.map(function(g){return g[0]+"-"+g[1];}).join(", ")+(s&&s.match_code?' &middot; DUPR #'+esc(s.match_code):'')+'</small>'+(st.err?'<div><small style="color:#b3261e">'+esc(st.err)+'</small></div>':'')+'</div>';
+    h+='<span class="du-b '+st.c+'">'+esc(st.t)+'</span>';
+    if(!x.problem&&(!s||st.c==="er"))h+='<button class="cp" data-dua="up" data-duk="'+esc(x.key)+'"'+(DUBUSY?' disabled':'')+'>Send</button>';
+    if(st.c==="ch")h+='<button class="cp" data-dua="upd" data-duk="'+esc(x.key)+'"'+(DUBUSY?' disabled':'')+'>Update</button>';
+    if(s&&s.match_code)h+='<button class="cp" data-dua="del" data-duk="'+esc(x.key)+'"'+(DUBUSY?' disabled':'')+'>Delete</button>';
+    h+='</div>';});
+  /* DUPR IDs */
+  var miss=0,all=0;Object.keys(POOLS).forEach(function(p){POOLS[p].forEach(function(t){if(!players(t).some(Boolean))return;duIds(t).forEach(function(v){all++;if(!duOk(v))miss++;});});});
+  h+='<h3>Players\' DUPR IDs</h3><p class="sub">'+(all-miss)+' of '+all+' entered. A DUPR ID is the 6-character code on the player\'s DUPR profile.</p>';
+  CFG.divs.forEach(function(d,di){
+    var codes=divCodes(di).filter(function(t){return players(t).some(Boolean);});if(!codes.length)return;
+    h+='<h3 style="font-size:.9rem">'+esc(d.name)+'</h3><table class="du-t">';
+    codes.forEach(function(t){var pl=players(t),ids=duIds(t);
+      [0,1].forEach(function(i){h+='<tr><td>'+(i?'':'<b>'+t+'</b>')+'</td><td>'+esc(pl[i]||('Player '+(i+1)))+'</td><td><input data-du="'+t+'|'+i+'" value="'+esc(ids[i])+'" placeholder="DUPR ID" maxlength="12" autocapitalize="characters" spellcheck="false"'+(ids[i]&&!duOk(ids[i])?' class="bad"':'')+'></td></tr>';});});
+    h+='</table>';
+  });
+  return h;
+}
+function duRun(action,list){
+  if(DUBUSY)return;DUBUSY=true;DUMSG="";render();
+  var body=action==="ping"?{action:"ping"}:action==="del"?{action:"delete",identifier:list}:{action:action,matches:list};
+  duCall(body).then(function(j){
+    if(j.error)DUMSG=j.error;
+    if(j.env)DUENV=j.env;
+    if(j.results){var bad=j.results.filter(function(r){return !r.ok;});DUMSG=bad.length?(bad.length+" of "+j.results.length+" failed. First error: "+(bad[0].error||"unknown")):("Done: "+j.results.length+" sent to DUPR"+(j.env==="uat"?" (test)":"")+".");}
+    if(action==="ping"&&j.ok)DUMSG="";
+    if(action==="del"&&j.ok)DUMSG="Deleted from DUPR.";
+  }).catch(function(e){DUMSG=(e&&e.message)||String(e);}).then(function(){DUBUSY=false;return duLoad();}).then(function(){render();});
+}
+document.addEventListener("click",function(e){
+  var t=e.target.closest?e.target.closest("[data-dua]"):null;if(!t||!canEdit)return;
+  var a=t.dataset.dua,k=t.dataset.duk,L=duMatches(),pick=function(f){return L.filter(f).map(function(x){return x.m;});};
+  if(a==="ping")duRun("ping");
+  else if(a==="reload"){duLoad().then(render);}
+  else if(a==="upall")duRun("upload",pick(function(x){var s=DUST[x.m.identifier];return !x.problem&&(!s||(s.status==="error"&&!s.match_code));}));
+  else if(a==="updall")duRun("update",pick(function(x){return duState(x).c==="ch";}));
+  else if(a==="up")duRun("upload",pick(function(x){return x.key===k;}));
+  else if(a==="upd")duRun("update",pick(function(x){return x.key===k;}));
+  else if(a==="del"){var x=L.filter(function(y){return y.key===k;})[0];if(!x)return;
+    if(t.dataset.arm!=="1"){t.dataset.arm="1";t.textContent="Tap again to delete";return;}
+    duRun("del",x.m.identifier);}
+});
+document.addEventListener("change",function(e){
+  var t=e.target;if(!t||!t.dataset||!canEdit)return;
+  if(t.dataset.du!==undefined){var p=t.dataset.du.split("|"),v=duId(t.value);DU.ids=Object.assign({},DU.ids);var cur=(DU.ids[p[0]]||["",""]).slice();cur[+p[1]]=v;DU.ids[p[0]]=cur;duSave();render();}
+  else if(t.dataset.dus!==undefined){DU[t.dataset.dus]=t.value.trim();duSave();render();}
+});
 render();
 initDb();
 setInterval(function(){refresh();},30000);
