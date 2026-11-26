@@ -1339,7 +1339,7 @@ function tvPanels(G){
     d.pl.forEach(function(p){h+='<table class="tvt"><tr><th>#</th><th class="l">Pool '+p+'</th><th>W-L</th><th>+/-</th></tr>';
       stand(p).forEach(function(x,i){var df=x.pf-x.pa;h+='<tr'+(i<d.adv?' class="adv"':'')+'><td>'+(i+1)+'</td><td class="l">'+esc(nm(x.t))+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(df>0?'+':'')+df+'</td></tr>';});
       h+='</table>';});
-    P.push(h+'</div>');
+    if(!poOn(di))P.push(h+'</div>');
     if(podium(di))P.unshift('<div class="tvpod">'+podiumHtml(di)+'</div>');
     if(poOn(di)){
       P.push({w:true,h:'<div class="tvph">'+esc(d.name)+' &middot; Playoffs</div><div class="tvbk">'+bracketSVG(di).svg+'</div>'});
