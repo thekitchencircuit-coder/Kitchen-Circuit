@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{var kt=localStorage.getItem("kc_theme");if(kt==="light"||kt==="dark")document.documentElement.setAttribute("data-theme",kt);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14532d">
 <link rel="icon" href="icon-192.png">
@@ -306,7 +307,8 @@ html.tvmode .tvmain.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}ht
 .tvbk svg{width:100%;height:auto;display:block}
 html.tvmode .bsvg{--card:#0f1c15;--line:#2c4436;--ink:#eef5f0;--muted:#86a493;--accent:#22c55e}
 :root{--md:#2563EB;--md-bg:#DBEAFE;--md-tx:#1E40AF;--wd:#DC2626;--wd-bg:#FEE2E2;--wd-tx:#991B1B}
-@media (prefers-color-scheme:dark){:root{--md:#3B82F6;--md-bg:#1E3A8A;--md-tx:#BFDBFE;--wd:#EF4444;--wd-bg:#7F1D1D;--wd-tx:#FECACA}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--md:#3B82F6;--md-bg:#1E3A8A;--md-tx:#BFDBFE;--wd:#EF4444;--wd-bg:#7F1D1D;--wd-tx:#FECACA}}
+:root[data-theme="dark"]{--md:#3B82F6;--md-bg:#1E3A8A;--md-tx:#BFDBFE;--wd:#EF4444;--wd-bg:#7F1D1D;--wd-tx:#FECACA}
 html.tvmode{--md:#3B82F6;--md-bg:#1E3A8A;--md-tx:#BFDBFE;--wd:#EF4444;--wd-bg:#7F1D1D;--wd-tx:#FECACA}
 .m.dv-md{border-left:7px solid var(--md)}.m.dv-wd{border-left:7px solid var(--wd)}
 .dtag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.04em;padding:1px 6px;border-radius:5px;margin-right:4px;vertical-align:middle}
@@ -322,12 +324,13 @@ html.tvmode .tvdt{font-size:.75em;margin:0 0 .3vw;padding:.1vw .5vw}
 html.tvmode .bsvg.bk-md .bsn{fill:#93C5FD}html.tvmode .bsvg.bk-wd .bsn{fill:#FCA5A5}
 .cstb tr.cs-md td.csn{border-left:6pt solid #2563EB;color:#1E40AF}.cstb tr.cs-wd td.csn{border-left:6pt solid #DC2626;color:#991B1B}
 @media print{.cstb tr td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px}.hdr h1{margin-right:auto}.thm{flex:none;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:.82rem;font-weight:600;white-space:nowrap}html.tvmode .hdr .thm{display:none}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Kitchen Circuit Moneyball</h1>
+<div class="hdr"><h1>Kitchen Circuit Moneyball</h1><button class="thm" id="thm" data-thm="1" aria-label="Change light or dark mode"></button></div>
 <nav id="nav"></nav>
 <p class="st" id="st"></p>
 <div id="app"></div>
@@ -1682,6 +1685,13 @@ document.addEventListener("change",function(e){var t=e.target;if(!t||!t.dataset|
   if(k==="what"&&t.value==="none"){PR.what="none";}else PR[k]=k==="blank"?Math.max(0,Math.min(40,+t.value||0)):t.value;render();});
 document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-prgo]"):null;if(t&&canEdit)printSlips();});
 
+/* light / dark mode: Auto follows the phone; the choice is saved on this device */
+function themeNow(){return lsGet("kc_theme")||"auto";}
+function applyTheme(){var t=themeNow(),r=document.documentElement;if(t==="auto")r.removeAttribute("data-theme");else r.setAttribute("data-theme",t);
+  var b=document.getElementById("thm");if(b)b.innerHTML=(t==="dark"?"&#9790; Dark":t==="light"?"&#9788; Light":"&#9680; Auto");
+  var dark=t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches),m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",dark?"#0e1612":"#14532d");}
+document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-thm]"):null;if(!t)return;var n={auto:"light",light:"dark",dark:"auto"}[themeNow()];lsSet("kc_theme",n==="auto"?null:n);applyTheme();});
+applyTheme();
 /* find your team by typing a player or team name */
 var MYQ="";
 function myMatches(q){
