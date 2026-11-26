@@ -305,6 +305,23 @@ html.tvmode #app{font-size:1.05vw}
 html.tvmode .tvmain.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}html.tvmode .tvmain.wide .tvgrid,html.tvmode .tvmain.wide .tvgrid.c5{grid-template-columns:repeat(2,minmax(0,1fr))}html.tvmode .tvmain.wide .tvc.free{display:none}
 .tvbk svg{width:100%;height:auto;display:block}
 html.tvmode .bsvg{--card:#0f1c15;--line:#2c4436;--ink:#eef5f0;--muted:#86a493;--accent:#22c55e}
+:root{--md:#2563EB;--md-bg:#DBEAFE;--md-tx:#1E40AF;--wd:#DC2626;--wd-bg:#FEE2E2;--wd-tx:#991B1B}
+@media (prefers-color-scheme:dark){:root{--md:#3B82F6;--md-bg:#1E3A8A;--md-tx:#BFDBFE;--wd:#EF4444;--wd-bg:#7F1D1D;--wd-tx:#FECACA}}
+html.tvmode{--md:#3B82F6;--md-bg:#1E3A8A;--md-tx:#BFDBFE;--wd:#EF4444;--wd-bg:#7F1D1D;--wd-tx:#FECACA}
+.m.dv-md{border-left:7px solid var(--md)}.m.dv-wd{border-left:7px solid var(--wd)}
+.dtag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.04em;padding:1px 6px;border-radius:5px;margin-right:4px;vertical-align:middle}
+.m .lb .dtag{display:table;margin:0 0 2px}.dt-md{background:var(--md-bg);color:var(--md-tx)}.dt-wd{background:var(--wd-bg);color:var(--wd-tx)}
+.dchip.dc-md{border:1.5px solid var(--md);color:var(--md-tx)}.dchip.dc-wd{border:1.5px solid var(--wd);color:var(--wd-tx)}
+.dchip.dc-md.on{background:var(--md);border-color:var(--md);color:#fff}.dchip.dc-wd.on{background:var(--wd);border-color:var(--wd);color:#fff}
+.dvh.dx-md,.tvph.dx-md{color:var(--md-tx);border-bottom:3px solid var(--md);padding-bottom:4px}.dvh.dx-wd,.tvph.dx-wd{color:var(--wd-tx);border-bottom:3px solid var(--wd);padding-bottom:4px}
+html.tvmode .tvc.td-md{border-top:.5vw solid var(--md)}html.tvmode .tvc.td-wd{border-top:.5vw solid var(--wd)}
+html.tvmode .tvdt{font-size:.75em;margin:0 0 .3vw;padding:.1vw .5vw}
+.tvci.ci-md{border-left:.35vw solid var(--md)}.tvci.ci-wd{border-left:.35vw solid var(--wd)}
+.bsvg.bk-md .bln{stroke:var(--md)}.bsvg.bk-md .bsc{fill:var(--md);opacity:.22}.bsvg.bk-md .bsn{fill:var(--md-tx)}
+.bsvg.bk-wd .bln{stroke:var(--wd)}.bsvg.bk-wd .bsc{fill:var(--wd);opacity:.22}.bsvg.bk-wd .bsn{fill:var(--wd-tx)}
+html.tvmode .bsvg.bk-md .bsn{fill:#93C5FD}html.tvmode .bsvg.bk-wd .bsn{fill:#FCA5A5}
+.cstb tr.cs-md td.csn{border-left:6pt solid #2563EB;color:#1E40AF}.cstb tr.cs-wd td.csn{border-left:6pt solid #DC2626;color:#991B1B}
+@media print{.cstb tr td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .skl{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}.skl a{color:var(--accent);cursor:pointer;text-decoration:underline}.skl form{display:grid;gap:8px;max-width:320px;margin-top:8px}.skl input{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}.skl button{padding:9px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600}
 </style>
 </head>
@@ -404,7 +421,11 @@ function build(){
   M.sort(function(x,y){return x.slot-y.slot||x.court-y.court;});
   PLAN={rrEnd:rrEnd,lastEnd:lastEnd,unplaced:todo.length,fits:!todo.length&&lastEnd<=Math.max.apply(null,COURTS.map(function(c){return CEND[c];}))};
 }
-function CLS(di){return ["o","d","w","x"][di%4];}
+/* division colours: MD blue, WD red (falls back to the old palette for other names) */
+function dk(di){var n=String((CFG.divs[di]||{}).name||DIVN[di]||"").toUpperCase();return /(^|\W)MD(\W|$)|MEN'?S/.test(n)?"md":/(^|\W)WD(\W|$)|WOMEN'?S/.test(n)?"wd":"";}
+function dkn(name){var i=DIVN.indexOf(name);return i>=0?dk(i):"";}
+function dtag(di){var k=dk(di);return k?'<span class="dtag dt-'+k+'">'+k.toUpperCase()+'</span>':'';}
+function CLS(di){var k=dk(di);return k?"dv-"+k:["o","d","w","x"][di%4];}
 
 
 var S={s:{},n:{},c:{}},F={div:lsGet("kc_div")||"",court:""},tab=lsGet("kc_tab")||"scores",armed=false,db=null,canEdit=!(window.claude&&window.claude.use),pn=0,ld={},dn=0,ds=0,dc=0,MY=lsGet("kc_my")||"",ST="Offline mode: saved in this browser only.",q={};
@@ -479,7 +500,7 @@ function row(id,lb,a,b,en,cls,pa,pb){
   var ip=started(id);if(ip)rdy=false;
   var ctl='';
   if(canEdit&&a&&b&&!sc(id)&&en&&(ip||(nx[a]===id&&nx[b]===id&&cok)))ctl=ip?'<div class="stl on"><span><b>In progress</b> &middot; '+mins(id)+' min</span><button class="cp" data-unstart="'+id+'">Undo start</button></div>':'<div class="stl"><button class="sb" data-start="'+id+'">Start match</button><span class="sub" style="margin:0">Tap when you hand over the basket</span></div>';
-  return '<div class="mw'+(ip?' live':'')+'"><div class="m '+(cls||"")+(canEdit?' e':'')+(rdy?' rdy':'')+(ip?' ipm':'')+'"><div class="lb">'+lb+(ip?'<span class="ipb">Live</span>':rdy?'<span class="rb">Ready</span>':'')+'</div><div class="tm r'+(ca?' ci':'')+'">'+(ca&&!allIn?'<i class="okc" title="Checked in">&#10003;</i> ':'')+who(a,pa)+'</div>'+inp(id,0,v[0],ok)+'<span>-</span>'+inp(id,1,v[1],ok)+'<div class="tm'+(cb?' ci':'')+'">'+(cb&&!allIn?'<i class="okc" title="Checked in">&#10003;</i> ':'')+who(b,pb)+'</div>'+
+  return '<div class="mw'+(ip?' live':'')+'"><div class="m '+(cls||"")+(canEdit?' e':'')+(rdy?' rdy':'')+(ip?' ipm':'')+'"><div class="lb">'+((cls||"").indexOf("dv-")===0?'<span class="dtag dt-'+cls.slice(3,5)+'">'+cls.slice(3,5).toUpperCase()+'</span>':'')+lb+(ip?'<span class="ipb">Live</span>':rdy?'<span class="rb">Ready</span>':'')+'</div><div class="tm r'+(ca?' ci':'')+'">'+(ca&&!allIn?'<i class="okc" title="Checked in">&#10003;</i> ':'')+who(a,pa)+'</div>'+inp(id,0,v[0],ok)+'<span>-</span>'+inp(id,1,v[1],ok)+'<div class="tm'+(cb?' ci':'')+'">'+(cb&&!allIn?'<i class="okc" title="Checked in">&#10003;</i> ':'')+who(b,pb)+'</div>'+
     (canEdit?'<button class="cl" data-clr="'+id+'" title="Clear this score" aria-label="Clear this score"'+(has?'':' disabled')+'>&times;</button>':'')+'</div>'+ctl+liveLine(id,a)+'</div>';
 }
 
@@ -592,13 +613,13 @@ function divOK(di){return !F.div||F.div===CFG.divs[di].name;}
 function divChips(){
   if(CFG.divs.length<2)return '';
   if(F.div&&DIVN.indexOf(F.div)<0)F.div="";
-  return '<div class="dchips">'+[""].concat(DIVN).map(function(n){return '<button class="dchip'+(F.div===n?' on':'')+'" data-dchip="'+esc(n)+'">'+(n?esc(n):'All divisions')+'</button>';}).join('')+'</div>';
+  return '<div class="dchips">'+[""].concat(DIVN).map(function(n){return '<button class="dchip'+(F.div===n?' on':'')+(n&&dkn(n)?' dc-'+dkn(n):'')+'" data-dchip="'+esc(n)+'">'+(n?esc(n):'All divisions')+'</button>';}).join('')+'</div>';
 }
 document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-dchip]"):null;if(!t)return;F.div=t.dataset.dchip;lsSet("kc_div",F.div||null);render();window.scrollTo(0,0);});
 function vStand(){
   var h=divChips();
   CFG.divs.forEach(function(d,di){if(!divOK(di))return;
-    h+='<h2 class="dvh">'+esc(d.name)+'</h2>';
+    h+='<h2 class="dvh'+(dk(di)?' dx-'+dk(di):'')+'">'+esc(d.name)+'</h2>';
     d.pl.forEach(function(p){h+='<h3>Pool '+p+'</h3>'+tbl(p,d.adv);});
     if(poOn(di)||canEdit)h+='<h3>'+esc(d.name)+' playoff seeds'+(poOn(di)?'':' (provisional'+(canEdit?', only you can see this':'')+')')+'</h3><ol class="seeds">'+seeds(di).map(function(t){return '<li>'+esc(nm(t))+'</li>';}).join('')+'</ol>';
   });
@@ -745,7 +766,7 @@ function bracketSVG(di,opts){
   if(br){var by=H+30;svg+='<text x="'+x+'" y="'+(by-BH/2-22)+'" class="bhd">Third place</text>'+matchBox(br,x,by);H=by+BH/2+10;}
   else H+=10;
   heads.forEach(function(hd){svg='<text x="'+hd[0]+'" y="18" class="bhd">'+hd[1]+'</text>'+svg;});
-  return {svg:'<svg class="bsvg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="xMinYMin meet" role="img" aria-label="'+esc(CFG.divs[di].name)+' playoff bracket">'+svg+'</svg>',w:W,h:H};
+  return {svg:'<svg class="bsvg'+(dk(di)?' bk-'+dk(di):'')+'" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="xMinYMin meet" role="img" aria-label="'+esc(CFG.divs[di].name)+' playoff bracket">'+svg+'</svg>',w:W,h:H};
 }
 function visBracket(di){
   var B=bracketSVG(di);
@@ -760,7 +781,7 @@ window.addEventListener("resize",function(){fitBrackets();});
 document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-vbfit]"):null;if(!t)return;VBFIT=!VBFIT;render();});
 
 function bracket(di){
-  var d=CFG.divs[di],X=resolve(di),o=X.o,en=X.en,R=X.R,h='<h3>'+esc(d.name)+' playoffs</h3>'+podiumHtml(di);
+  var d=CFG.divs[di],X=resolve(di),o=X.o,en=X.en,R=X.R,h='<h3'+(dk(di)?' class="dvh dx-'+dk(di)+'"':'')+'>'+esc(d.name)+' playoffs</h3>'+podiumHtml(di);
   var left=poLeft(di);
   if(!en){
     h+='<p class="sub">'+(left?'Pool play in progress: '+left+' match'+(left>1?'es':'')+' left. ':'Pool play is complete. ')+'Teams appear in the bracket once playoffs are activated.</p>';
@@ -1005,7 +1026,7 @@ function vRoster(){
   CFG.divs.forEach(function(d){
     var codes=[];for(var k=1;k<=d.size;k++)d.pl.forEach(function(p){codes.push(p+k);});
     var named=codes.filter(function(t){return players(t).some(Boolean);}),open=codes.length-named.length;
-    h+='<div class="rd"><h2 class="dvh">'+esc(d.name)+' <span class="pc">'+named.length+' of '+codes.length+' teams</span></h2><div class="rp"><table class="rt"><tr><th>#</th><th class="l">Players</th></tr>';
+    h+='<div class="rd"><h2 class="dvh'+(dk(CFG.divs.indexOf(d))?' dx-'+dk(CFG.divs.indexOf(d)):'')+'">'+esc(d.name)+' <span class="pc">'+named.length+' of '+codes.length+' teams</span></h2><div class="rp"><table class="rt"><tr><th>#</th><th class="l">Players</th></tr>';
     named.forEach(function(t,i){var pl=players(t).filter(Boolean);
       h+='<tr data-r="'+t+'"><td>'+(i+1)+'</td><td class="l">'+(tnm(t)?'<b class="rtn">'+esc(tnm(t))+'</b> ':'')+pl.map(esc).join(' &amp; ')+(pl.length<2?' <span class="sub" style="margin:0">&amp; partner to be confirmed</span>':'')+'</td></tr>';});
     if(!named.length)h+='<tr><td></td><td class="l"><span class="sub" style="margin:0">No teams yet</span></td></tr>';
@@ -1324,8 +1345,9 @@ function tvCourt(c,G,called){
   var cur=on[0],nxt=on[1],h='<div class="tvc';
   if(!cur)return h+' free"><div class="tvn">Court '+c+'</div><div class="tvs">'+(G.some(function(x){return x.court===c;})?'Done for the day':'Open')+'</div></div>';
   var live=started(cur.id),isCalled=called.indexOf(cur)>=0,L=live?refLive(cur.id):null;
-  h+=live?' live':isCalled?' call':' wait';
+  h+=(live?' live':isCalled?' call':' wait')+(dk(cur.di)?' td-'+dk(cur.di):'');
   h+='"><div class="tvn">Court '+c+'<span class="tvtag">'+(live?'Live':isCalled?'Called':'Up next')+'</span></div>';
+  if(dk(cur.di))h+='<span class="dtag dt-'+dk(cur.di)+' tvdt">'+esc(DIVN[cur.di])+'</span>';
   h+='<div class="tvm">'+(cur.a?tvTeam(cur.a):'<span class="tvtm tbd">'+esc(cur.lab)+'</span>')+(L?'<span class="tvsc">'+L.st.o.a+'</span>':'')+'</div>';
   h+='<div class="tvm">'+(cur.b?tvTeam(cur.b):'<span class="tvtm tbd">TBD</span>')+(L?'<span class="tvsc">'+L.st.o.b+'</span>':'')+'</div>';
   h+='<div class="tvx">'+(cur.po?esc(cur.lab)+' &middot; ':esc(DIVN[cur.di])+' &middot; ')+(live?(L?(esc(nm(cur[L.st.srv]))+' serving &middot; '):'')+mins(cur.id)+' min':isCalled?'Both teams to the scorekeeper table':'Waiting for court')+'</div>';
@@ -1335,14 +1357,14 @@ function tvCourt(c,G,called){
 function tvPanels(G){
   var P=[];
   CFG.divs.forEach(function(d,di){
-    var h='<div class="tvph">'+esc(d.name)+' &middot; Standings</div><div class="tvpools">';
+    var h='<div class="tvph'+(dk(di)?' dx-'+dk(di):'')+'">'+esc(d.name)+' &middot; Standings</div><div class="tvpools">';
     d.pl.forEach(function(p){h+='<table class="tvt"><tr><th>#</th><th class="l">Pool '+p+'</th><th>W-L</th><th>+/-</th></tr>';
       stand(p).forEach(function(x,i){var df=x.pf-x.pa;h+='<tr'+(i<d.adv?' class="adv"':'')+'><td>'+(i+1)+'</td><td class="l">'+esc(nm(x.t))+'</td><td>'+x.w+'-'+x.l+'</td><td>'+(df>0?'+':'')+df+'</td></tr>';});
       h+='</table>';});
     if(!poOn(di))P.push(h+'</div>');
     if(podium(di))P.unshift('<div class="tvpod">'+podiumHtml(di)+'</div>');
     if(poOn(di)){
-      P.push({w:true,h:'<div class="tvph">'+esc(d.name)+' &middot; Playoffs</div><div class="tvbk">'+bracketSVG(di).svg+'</div>'});
+      P.push({w:true,h:'<div class="tvph'+(dk(di)?' dx-'+dk(di):'')+'">'+esc(d.name)+' &middot; Playoffs</div><div class="tvbk">'+bracketSVG(di).svg+'</div>'});
     }
   });
   return P;
@@ -1369,7 +1391,7 @@ function vTV(){
     return h+'<div class="tvwel"><div class="tvwl">Welcome</div><div class="tvws">Check in at the scorekeeper table.<br>Scan the code to find your team and turn on match alerts.</div>'+tvCheckin(true)+'<img class="tvwq" src="qr.png" alt="QR code for kitchen-circuit.vercel.app"><div class="tvwc">'+reg+' teams &middot; '+CFG.divs.map(function(d){return esc(d.name);}).join(' &middot; ')+'</div></div>';
   }
   var called=calledGames(G);
-  if(called.length)h+='<div class="tvcall"><span class="tvcl">To the scorekeeper table now</span>'+called.map(function(g){return '<span class="tvci"><b>Ct '+g.court+'</b> '+esc(nm(g.a))+' <i>v</i> '+esc(nm(g.b))+'</span>';}).join('')+'</div>';
+  if(called.length)h+='<div class="tvcall"><span class="tvcl">To the scorekeeper table now</span>'+called.map(function(g){return '<span class="tvci'+(dk(g.di)?' ci-'+dk(g.di):'')+'"><b>Ct '+g.court+'</b> '+esc(nm(g.a))+' <i>v</i> '+esc(nm(g.b))+'</span>';}).join('')+'</div>';
   h+='<div class="tvmain"><div class="tvgrid'+(COURTS.length>8?' c5':'')+'">'+COURTS.map(function(c){return tvCourt(c,G,called);}).join('')+'</div>';
   var P=tvPanels(G).map(function(p){return typeof p==="string"?{h:p}:p;});if(Date.now()-TVLAST>15000){TVROT++;TVLAST=Date.now();}
   var cur=P.length?P[TVROT%P.length]:null;if(cur&&cur.w)h=h.replace('<div class="tvmain">','<div class="tvmain wide">');
@@ -1616,7 +1638,7 @@ function csRow(g,i){
   var ph=["",""];if(g&&g.po){var R=resolve(g.di).R[g.id]||{};ph=[R.pa||"",R.pb||""];}
   function team(t,p){return t?'<b>'+esc(nm(t))+'</b>'+(tnm(t)&&plnames(t)?'<small>'+esc(plnames(t))+'</small>':''):(p?'<em>'+esc(p)+'</em>':'<span class="csline"></span>');}
   var info=g?(g.po?esc(g.lab.replace(DIVN[g.di]+" ","")):(function(){var m=String(g.id).match(/^([A-Z])r(\d+)/);return 'Pool '+(m?m[1]+' &middot; Rd '+(+m[2]+1):'');})()):'';
-  return '<tr><td class="csn">'+(i+1)+'</td><td class="cst">'+(g?'<b>'+T[g.slot].replace(" PM","")+'</b><small>'+(g?esc(DIVN[g.di]):'')+'<br>'+info+'</small>':'<span class="csline s"></span>')+'</td>'+
+  return '<tr'+(g&&dk(g.di)?' class="cs-'+dk(g.di)+'"':'')+'><td class="csn">'+(i+1)+'</td><td class="cst">'+(g?'<b>'+T[g.slot].replace(" PM","")+'</b><small>'+(g?esc(DIVN[g.di]):'')+'<br>'+info+'</small>':'<span class="csline s"></span>')+'</td>'+
     '<td class="csa">'+team(g&&g.a,ph[0])+'</td><td class="csbx"></td><td class="csv">vs</td><td class="csbx"></td><td class="csb">'+team(g&&g.b,ph[1])+'</td><td class="csin"></td></tr>';
 }
 function courtSheet(c,rows,part,parts){
